@@ -24,8 +24,7 @@ class AppColors {
   static const cardShadow = Color(0x14231A0A);
 }
 
-/// Har category ka apna signature color hota hai — taake list mein
-/// pehchan aasan ho (sirf icon shape nahi, color bhi alag).
+
 class CategoryStyle {
   final Color color;
   final Color bg;
