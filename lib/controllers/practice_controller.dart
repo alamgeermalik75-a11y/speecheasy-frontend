@@ -30,7 +30,7 @@ class PracticeController extends ChangeNotifier {
         speech = speechService ?? SpeechRecognitionService(),
         whisper = whisperService ??
             WhisperTranscriptionService(
-              backendUrl: 'http://192.168.1.4:3000/api/transcribe',
+              backendUrl: WhisperConfig.transcribe,
             ),
         _evaluation = evaluationService ?? EvaluationService(),
         _storage = storage ?? StorageService() {

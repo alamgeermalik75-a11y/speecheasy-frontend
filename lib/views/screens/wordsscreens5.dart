@@ -106,31 +106,44 @@ class _PositionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final hasWords = words.isNotEmpty;
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
       child: Column(
         children: [
           ListTile(
-            onTap: words.isEmpty ? null : onExpandToggle,
-            leading: CircleAvatar(
-              backgroundColor: AppColors.lightGreenBg,
-              child: Text('${words.length}', style: const TextStyle(fontSize: 10)),
+            onTap: hasWords ? onExpandToggle : null,
+            leading: Container(
+              width: 40,
+              height: 40,
+              decoration: const BoxDecoration(color: AppColors.lightGreenBg, shape: BoxShape.circle),
+              alignment: Alignment.center,
+              child: Text(
+                '${words.length}',
+                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.accentGreen),
+              ),
             ),
-            title: Text(position.label, style: const TextStyle(fontWeight: FontWeight.bold)),
-            subtitle: Text(words.isEmpty ? 'No words available for this position yet' : position.hint),
-            trailing: words.isEmpty
-                ? null
-                : Icon(expanded ? Icons.expand_less : Icons.chevron_right),
+            title: Text(position.label, style: const TextStyle(fontWeight: FontWeight.w700)),
+            subtitle: Text(
+              hasWords ? position.hint : 'No words available for this position yet',
+              style: const TextStyle(color: AppColors.textMuted, fontSize: 12.5),
+            ),
+            trailing: hasWords
+                ? Icon(
+                    expanded ? Icons.expand_less_rounded : Icons.expand_more_rounded,
+                    color: AppColors.textMuted,
+                  )
+                : null,
           ),
           if (expanded)
             ...words.map((w) => ListTile(
                   title: Text(w.text, textDirection: TextDirection.rtl),
-                  trailing: const Icon(Icons.play_arrow, size: 20),
+                  trailing: const Icon(Icons.play_circle_outline_rounded, size: 22, color: AppColors.primaryDark),
                   onTap: () => onWordTap(w),
                 )),
           if (expanded && words.isNotEmpty)
             Padding(
-              padding: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
               child: ElevatedButton(
                 onPressed: () => onWordTap(words.first),
                 child: Text('Continue with ${position.label}'),

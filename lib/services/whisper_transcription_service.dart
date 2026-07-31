@@ -89,7 +89,12 @@ class WhisperTranscriptionService {
         ..fields['language'] = language
         ..files.add(await http.MultipartFile.fromPath('audio', file.path));
 
-      final streamed = await request.send().timeout(const Duration(seconds: 30));
+      final streamed = await request.send().timeout(
+            const Duration(seconds: 15),
+            onTimeout: () => throw Exception(
+              'Transcription is taking too long. Please check your internet connection and try again.',
+            ),
+          );
       final response = await http.Response.fromStream(streamed);
       debugPrint('[Whisper] response ${response.statusCode}: ${response.body}');
 

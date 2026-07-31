@@ -18,6 +18,26 @@ class ApiConfig {
   static String search(String word) => '$baseUrl/search?word=$word';
 }
 
+/// Config for the separate Speechmatics transcription backend
+/// (whisper-transcription-backend). This is NOT the same server as
+/// ApiConfig.baseUrl above - it's a standalone Node/Express proxy that
+/// currently only runs locally on the developer's machine, not deployed
+/// anywhere yet.
+///
+/// While testing like this, your phone and computer must be on the same
+/// Wi-Fi network, and this IP must be your computer's *current* local
+/// network address (it can change when you reconnect to Wi-Fi):
+///   - Windows: run `ipconfig` in cmd, look for "IPv4 Address"
+///   - Mac/Linux: run `ifconfig` (or `ipconfig getifaddr en0` on Mac)
+///
+/// Before releasing this app to real users, deploy this backend somewhere
+/// reachable from anywhere (Railway, Render, etc.) and point this at that
+/// public URL instead - a hardcoded local IP will only ever work on your
+/// own Wi-Fi.
+class WhisperConfig {
+  static const String transcribe = 'http://192.168.1.4:3000/api/transcribe';
+}
+
 enum PracticeLevel { words, sentences, fillBlanks, poems, story }
 
 extension PracticeLevelX on PracticeLevel {

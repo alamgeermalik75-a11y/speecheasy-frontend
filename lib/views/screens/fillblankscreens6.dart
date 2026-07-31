@@ -5,7 +5,9 @@ import '../../controllers/progress_controller.dart';
 import '../../models/alphabet.dart';
 import '../../utils/constants.dart';
 import '../../utils/responsive_helper.dart';
+import '../../utils/theme.dart';
 import '../widgets/error_state_view.dart';
+import '../widgets/mic_recorder_section.dart';
 import '../widgets/pronunciation_result_card.dart';
 
 class FillBlankScreen extends StatefulWidget {
@@ -66,19 +68,40 @@ class _FillBlankScreenState extends State<FillBlankScreen> {
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.stretch,
                                   children: [
-                                    Text('${controller.index + 1} of ${controller.items.length}',
-                                        textAlign: TextAlign.center,
-                                        style: const TextStyle(color: AppColors.textMuted)),
-                                    SizedBox(height: r.space(16)),
-                                    Text(
-                                      controller.current!.question,
-                                      style: TextStyle(fontSize: r.font(24), fontWeight: FontWeight.w600),
-                                      textDirection: TextDirection.rtl,
-                                      textAlign: TextAlign.center,
+                                    Container(
+                                      width: double.infinity,
+                                      padding: EdgeInsets.all(r.space(20)),
+                                      decoration: BoxDecoration(
+                                        color: AppColors.surface,
+                                        borderRadius: BorderRadius.circular(AppTheme.radius),
+                                        border: Border.all(color: AppColors.cardBorder),
+                                        boxShadow: AppTheme.cardShadow,
+                                      ),
+                                      child: Column(
+                                        children: [
+                                          Text('${controller.index + 1} of ${controller.items.length}',
+                                              textAlign: TextAlign.center,
+                                              style: const TextStyle(
+                                                color: AppColors.textMuted,
+                                                fontSize: 12.5,
+                                                fontWeight: FontWeight.w600,
+                                              )),
+                                          SizedBox(height: r.space(14)),
+                                          Text(
+                                            controller.current!.question,
+                                            style: TextStyle(fontSize: r.font(24), fontWeight: FontWeight.w600),
+                                            textDirection: TextDirection.rtl,
+                                            textAlign: TextAlign.center,
+                                          ),
+                                        ],
+                                      ),
                                     ),
                                     SizedBox(height: r.space(20)),
                                     Text('Ek option chunein:',
-                                        style: TextStyle(color: AppColors.textMuted, fontSize: r.font(13))),
+                                        style: TextStyle(
+                                            color: AppColors.textMuted,
+                                            fontSize: r.font(13),
+                                            fontWeight: FontWeight.w600)),
                                     SizedBox(height: r.space(10)),
                                     ...controller.current!.options.map((opt) {
                                       final selected = controller.selectedOption == opt;
@@ -154,58 +177,28 @@ class _FillBlankScreenState extends State<FillBlankScreen> {
                                         ),
                                       ),
                                       SizedBox(height: r.space(10)),
-                                      Center(
-                                        child: GestureDetector(
-                                          onTap: () => controller.toggleMic(onError: _showMessage),
-                                          child: CircleAvatar(
-                                            radius: r.micButtonRadius,
-                                            backgroundColor: controller.isRecording ? AppColors.danger : AppColors.primaryDark,
-                                            child: Icon(controller.isRecording ? Icons.stop : Icons.mic,
-                                                color: Colors.white, size: 28),
-                                          ),
-                                        ),
-                                      ),
-                                      SizedBox(height: r.space(8)),
-                                      Text(
-                                        controller.isRecording ? 'Listening... tap to stop' : 'Tap and speak',
-                                        textAlign: TextAlign.center,
-                                        style: const TextStyle(color: AppColors.textMuted),
-                                      ),
-                                      if (controller.liveText.isNotEmpty) ...[
-                                        SizedBox(height: r.space(12)),
-                                        Container(
-                                          padding: const EdgeInsets.all(12),
-                                          decoration: BoxDecoration(
-                                            color: Colors.white,
-                                            borderRadius: BorderRadius.circular(10),
-                                            border: Border.all(color: AppColors.cardBorder),
-                                          ),
-                                          child: Text(controller.liveText,
-                                              textDirection: TextDirection.rtl,
-                                              textAlign: TextAlign.center,
-                                              style: TextStyle(fontSize: r.font(18))),
-                                        ),
-                                      ],
-                                      SizedBox(height: r.space(20)),
-                                      ElevatedButton(
-                                        onPressed: controller.isChecking
-                                            ? null
-                                            : () => controller.checkPronunciation(
-                                                  onScored: (itemId, score) {
-                                                    context.read<ProgressController>().recordAttempt(
-                                                          itemId: itemId,
-                                                          level: PracticeLevel.fillBlanks,
-                                                          score: score,
-                                                        );
-                                                  },
-                                                  onInfo: _showMessage,
-                                                ),
-                                        child: controller.isChecking
-                                            ? const SizedBox(
-                                                height: 20,
-                                                width: 20,
-                                                child: CircularProgressIndicator(color: Colors.white))
-                                            : const Text('Check pronunciation'),
+                                      MicRecorderSection(
+                                        showHeading: false,
+                                        isRecording: controller.isRecording,
+                                        isChecking: controller.isChecking,
+                                        liveText: controller.liveText,
+                                        onMicTap: () async {
+                                          if (controller.isRecording) {
+                                            await controller.toggleMic(onError: _showMessage);
+                                            await controller.checkPronunciation(
+                                              onScored: (itemId, score) {
+                                                context.read<ProgressController>().recordAttempt(
+                                                      itemId: itemId,
+                                                      level: PracticeLevel.fillBlanks,
+                                                      score: score,
+                                                    );
+                                              },
+                                              onInfo: _showMessage,
+                                            );
+                                          } else {
+                                            await controller.toggleMic(onError: _showMessage);
+                                          }
+                                        },
                                       ),
                                       if (controller.result != null) _buildResultCard(r, controller),
                                     ],

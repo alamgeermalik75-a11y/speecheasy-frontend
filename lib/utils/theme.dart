@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'constants.dart';
 
 class AppTheme {
@@ -32,6 +33,7 @@ class AppTheme {
         centerTitle: false,
         titleTextStyle: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700),
         iconTheme: IconThemeData(color: Colors.white),
+        systemOverlayStyle: SystemUiOverlayStyle.light,
       ),
 
       elevatedButtonTheme: ElevatedButtonThemeData(

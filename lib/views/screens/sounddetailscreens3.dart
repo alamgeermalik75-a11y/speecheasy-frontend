@@ -95,6 +95,7 @@ class _SoundDetailScreenState extends State<SoundDetailScreen> {
                     }).toList(),
                   ),
                 ),
+                SizedBox(height: r.space(12)),
                 ElevatedButton(
                   onPressed: () => _openLevel(context, PracticeLevel.words),
                   child: const Text('Continue with Words'),

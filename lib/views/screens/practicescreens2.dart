@@ -5,7 +5,9 @@ import '../../controllers/progress_controller.dart';
 import '../../models/alphabet.dart';
 import '../../utils/constants.dart';
 import '../../utils/responsive_helper.dart';
+import '../../utils/theme.dart';
 import '../widgets/error_state_view.dart';
+import '../widgets/mic_recorder_section.dart';
 import '../widgets/pronunciation_result_card.dart';
 
 class PracticeScreen extends StatefulWidget {
@@ -67,77 +69,72 @@ class _PracticeScreenState extends State<PracticeScreen> {
                                 constraints: BoxConstraints(maxWidth: r.maxContentWidth),
                                 child: Column(
                                   children: [
-                                    Text('${controller.index + 1} of ${controller.items.length}',
-                                        style: const TextStyle(color: AppColors.textMuted)),
-                                    SizedBox(height: r.space(16)),
-                                    Text(
-                                      controller.current!.text,
-                                      style: TextStyle(fontSize: r.font(26)),
-                                      textDirection: TextDirection.rtl,
-                                      textAlign: TextAlign.center,
-                                    ),
-                                    SizedBox(height: r.space(16)),
-                                    IconButton(
-                                      iconSize: 40,
-                                      icon: CircleAvatar(
-                                        radius: r.speakerButtonRadius,
-                                        child: Icon(controller.isSpeaking ? Icons.stop : Icons.volume_up),
+                                    Container(
+                                      width: double.infinity,
+                                      padding: EdgeInsets.all(r.space(20)),
+                                      decoration: BoxDecoration(
+                                        color: AppColors.surface,
+                                        borderRadius: BorderRadius.circular(AppTheme.radius),
+                                        border: Border.all(color: AppColors.cardBorder),
+                                        boxShadow: AppTheme.cardShadow,
                                       ),
-                                      onPressed: controller.playReference,
-                                    ),
-                                    Text(controller.isSpeaking ? 'Tap to stop' : 'Tap to hear it',
-                                        style: const TextStyle(color: AppColors.textMuted)),
-                                    const Divider(height: 40),
-                                    const Text('Now say it yourself', style: TextStyle(color: AppColors.textMuted)),
-                                    SizedBox(height: r.space(10)),
-                                    GestureDetector(
-                                      onTap: () => controller.toggleMic(onError: _showMessage),
-                                      child: CircleAvatar(
-                                        radius: r.micButtonRadius,
-                                        backgroundColor: controller.isRecording ? AppColors.danger : AppColors.primaryDark,
-                                        child: Icon(controller.isRecording ? Icons.stop : Icons.mic,
-                                            color: Colors.white, size: 28),
-                                      ),
-                                    ),
-                                    SizedBox(height: r.space(8)),
-                                    Text(controller.isRecording ? 'Listening... tap to stop' : 'Tap and speak',
-                                        style: const TextStyle(color: AppColors.textMuted)),
-                                    if (controller.liveText.isNotEmpty) ...[
-                                      SizedBox(height: r.space(12)),
-                                      Container(
-                                        padding: const EdgeInsets.all(12),
-                                        decoration: BoxDecoration(
-                                          color: Colors.white,
-                                          borderRadius: BorderRadius.circular(10),
-                                          border: Border.all(color: AppColors.cardBorder),
-                                        ),
-                                        child: Text(controller.liveText,
+                                      child: Column(
+                                        children: [
+                                          Text(
+                                            '${controller.index + 1} of ${controller.items.length}',
+                                            style: const TextStyle(
+                                              color: AppColors.textMuted,
+                                              fontSize: 12.5,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                          SizedBox(height: r.space(16)),
+                                          Text(
+                                            controller.current!.text,
+                                            style: TextStyle(fontSize: r.font(26), fontWeight: FontWeight.w600),
                                             textDirection: TextDirection.rtl,
-                                            style: TextStyle(fontSize: r.font(18))),
+                                            textAlign: TextAlign.center,
+                                          ),
+                                          SizedBox(height: r.space(12)),
+                                          IconButton(
+                                            iconSize: 40,
+                                            icon: CircleAvatar(
+                                              radius: r.speakerButtonRadius,
+                                              child: Icon(controller.isSpeaking ? Icons.stop : Icons.volume_up),
+                                            ),
+                                            onPressed: controller.playReference,
+                                          ),
+                                          Text(
+                                            controller.isSpeaking ? 'Tap to stop' : 'Tap to hear it',
+                                            style: const TextStyle(color: AppColors.textMuted, fontSize: 12.5),
+                                          ),
+                                        ],
                                       ),
-                                    ],
-                                    SizedBox(height: r.space(20)),
-                                    ElevatedButton(
-                                      onPressed: controller.isChecking
-                                          ? null
-                                          : () => controller.checkPronunciation(
-                                                level: widget.level,
-                                                targetLetter: widget.alphabet.letter,
-                                                onScored: (itemId, score) {
-                                                  context.read<ProgressController>().recordAttempt(
-                                                        itemId: itemId,
-                                                        level: widget.level,
-                                                        score: score,
-                                                      );
-                                                },
-                                                onInfo: _showMessage,
-                                              ),
-                                      child: controller.isChecking
-                                          ? const SizedBox(
-                                              height: 20,
-                                              width: 20,
-                                              child: CircularProgressIndicator(color: Colors.white))
-                                          : const Text('Check pronunciation'),
+                                    ),
+                                    const Divider(height: 40),
+                                    MicRecorderSection(
+                                      isRecording: controller.isRecording,
+                                      isChecking: controller.isChecking,
+                                      liveText: controller.liveText,
+                                      onMicTap: () async {
+                                        if (controller.isRecording) {
+                                          await controller.toggleMic(onError: _showMessage);
+                                          await controller.checkPronunciation(
+                                            level: widget.level,
+                                            targetLetter: widget.alphabet.letter,
+                                            onScored: (itemId, score) {
+                                              context.read<ProgressController>().recordAttempt(
+                                                    itemId: itemId,
+                                                    level: widget.level,
+                                                    score: score,
+                                                  );
+                                            },
+                                            onInfo: _showMessage,
+                                          );
+                                        } else {
+                                          await controller.toggleMic(onError: _showMessage);
+                                        }
+                                      },
                                     ),
                                     if (controller.result != null) _buildResultCard(r, controller),
                                   ],

@@ -54,6 +54,24 @@ class _LibraryScreenState extends State<LibraryScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Text(
+                  'Urdu Pronunciation Practice',
+                  style: TextStyle(
+                    fontSize: r.font(13),
+                    color: AppColors.textMuted,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                SizedBox(height: r.space(4)),
+                Text(
+                  'Choose a sound to practice',
+                  style: TextStyle(
+                    fontSize: r.font(20),
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                SizedBox(height: r.space(16)),
                 TextField(
                   controller: _searchController,
                   onChanged: (v) => setState(() => _query = v),
