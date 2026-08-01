@@ -105,7 +105,7 @@ class _FillBlankScreenState extends State<FillBlankScreen> {
                                     SizedBox(height: r.space(10)),
                                     ...controller.current!.options.map((opt) {
                                       final selected = controller.selectedOption == opt;
-                                      final checked = controller.result != null;
+                                      final checked = controller.result != null || controller.isRecording;
                                       final isCorrectAnswer = opt == controller.current!.answer;
 
                                       Color borderColor = selected ? AppColors.accentGreen : AppColors.cardBorder;

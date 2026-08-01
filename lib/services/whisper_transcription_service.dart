@@ -89,8 +89,14 @@ class WhisperTranscriptionService {
         ..fields['language'] = language
         ..files.add(await http.MultipartFile.fromPath('audio', file.path));
 
+      // Give this at least as long as the backend's own Speechmatics session
+      // timeout (30s) plus some margin for network/upload time - a short
+      // client-side timeout was cutting off longer poem/story recordings
+      // right before the (correct, complete) transcript came back, making it
+      // look like words were "skipped" when actually the whole response was
+      // being discarded.
       final streamed = await request.send().timeout(
-            const Duration(seconds: 15),
+            const Duration(seconds: 45),
             onTimeout: () => throw Exception(
               'Transcription is taking too long. Please check your internet connection and try again.',
             ),

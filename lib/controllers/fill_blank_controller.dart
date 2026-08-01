@@ -73,6 +73,7 @@ class FillBlankController extends ChangeNotifier {
   }
 
   void selectOption(String option) {
+    if (isRecording) return;
     selectedOption = option;
     result = null;
     liveText = '';

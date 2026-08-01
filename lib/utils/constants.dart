@@ -35,7 +35,7 @@ class ApiConfig {
 /// public URL instead - a hardcoded local IP will only ever work on your
 /// own Wi-Fi.
 class WhisperConfig {
-  static const String transcribe = 'http://192.168.1.4:3000/api/transcribe';
+  static const String transcribe = 'https://backend-api.bonto.run/api/transcribe';
 }
 
 enum PracticeLevel { words, sentences, fillBlanks, poems, story }
