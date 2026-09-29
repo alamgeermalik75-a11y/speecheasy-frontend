@@ -29,11 +29,11 @@ class ApiConfig {
 }
 
 class CoreBackendConfig {
-  static const String baseUrl = 'http://127.0.0.1:8000/api/v1';
+  static const String baseUrl = 'https://speecheasy-speech-backend-production.up.railway.app/api/v1';
 }
 
 class AuthApiConfig {
-  static const String baseUrl = 'http://127.0.0.1:8001/api/v1';
+  static const String baseUrl = 'https://speecheasy-auth-service-production.up.railway.app/api/v1';
 }
 
 /// Config for the separate Speechmatics transcription backend
