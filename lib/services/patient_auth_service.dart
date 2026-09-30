@@ -118,7 +118,10 @@ class PatientAuthService {
   /// Public method for pre-initializing Google Sign In (used in initState)
   Future<void> ensureGoogleInitializedPublic() => _ensureGoogleInitialized();
 
+  Future<Map<String, dynamic>>? _inFlightBackendAuth;
+
   void _subscribeToGoogleAuthEvents() {
+    if (!kIsWeb) return;
     GoogleSignIn.instance.authenticationEvents.listen((event) async {
       if (event is GoogleSignInAuthenticationEventSignIn) {
         try {
@@ -139,6 +142,22 @@ class PatientAuthService {
   }
 
   Future<Map<String, dynamic>> _authenticateWithBackend(
+    String idToken,
+    String? displayName,
+  ) async {
+    if (_inFlightBackendAuth != null) {
+      return _inFlightBackendAuth!;
+    }
+    final future = _performAuthenticateWithBackend(idToken, displayName);
+    _inFlightBackendAuth = future;
+    try {
+      return await future;
+    } finally {
+      _inFlightBackendAuth = null;
+    }
+  }
+
+  Future<Map<String, dynamic>> _performAuthenticateWithBackend(
     String idToken,
     String? displayName,
   ) async {
