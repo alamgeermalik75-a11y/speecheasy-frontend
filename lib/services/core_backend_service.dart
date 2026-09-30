@@ -9,7 +9,18 @@ class CoreBackendService {
   factory CoreBackendService() => _instance;
   CoreBackendService._internal();
 
-  final String _baseUrl = CoreBackendConfig.baseUrl;
+  static const String _defaultLiveCoreUrl =
+      'https://speecheasy-speech-backend-production.up.railway.app/api/v1';
+
+  String get _baseUrl {
+    final configured = CoreBackendConfig.baseUrl.trim();
+    if (configured.isEmpty ||
+        configured.contains('localhost') ||
+        configured.contains('127.0.0.1')) {
+      return _defaultLiveCoreUrl;
+    }
+    return configured;
+  }
 
   Future<Map<String, String>> _getHeaders() async {
     final headers = <String, String>{

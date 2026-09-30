@@ -67,7 +67,18 @@ class PatientAuthService {
   bool _initialized = false;
   bool _googleReady = false;
 
-  String get _baseUrl => AuthApiConfig.baseUrl;
+  static const String _defaultLiveAuthUrl =
+      'https://speecheasy-auth-service-production.up.railway.app/api/v1';
+
+  String get _baseUrl {
+    final configured = AuthApiConfig.baseUrl.trim();
+    if (configured.isEmpty ||
+        configured.contains('localhost') ||
+        configured.contains('127.0.0.1')) {
+      return _defaultLiveAuthUrl;
+    }
+    return configured;
+  }
 
   bool get isLoggedIn => _accessToken != null && _currentUser != null;
   bool get isEmailVerified => _currentUser?.isVerified ?? false;
