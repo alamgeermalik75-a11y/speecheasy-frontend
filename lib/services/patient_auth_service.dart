@@ -94,6 +94,7 @@ class PatientAuthService {
   }
 
   VoidCallback? onGoogleSignInSuccess;
+  void Function(String error)? onGoogleSignInError;
 
   Future<void> _ensureGoogleInitialized() async {
     if (_googleReady) return;
@@ -130,6 +131,8 @@ class PatientAuthService {
           }
         } catch (e) {
           debugPrint('Error handling GoogleSignIn event: $e');
+          final msg = (e is AuthApiException) ? e.message : e.toString();
+          onGoogleSignInError?.call(msg);
         }
       }
     });
@@ -153,6 +156,8 @@ class PatientAuthService {
 
       if (!isVerified || verificationRequired) {
         final userMap = data['user'] as Map<String, dynamic>?;
+        _accessToken = null;
+        _refreshToken = null;
         _currentUser = PatientUser(
           uid: userMap?['id'] ?? '',
           email: data['email'] ?? userMap?['email'] ?? '',
@@ -161,6 +166,8 @@ class PatientAuthService {
           parentName: displayName,
         );
         final prefs = await SharedPreferences.getInstance();
+        await prefs.remove(_tokenKey);
+        await prefs.remove(_refreshKey);
         await prefs.setString(_userKey, jsonEncode(_currentUser!.toJson()));
         return data;
       }

@@ -106,6 +106,24 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
   }
 
   Future<void> _navigateNext() async {
+    final parent = widget.parentName.trim().isNotEmpty
+        ? widget.parentName.trim()
+        : AuthService.instance.parentNameHint();
+
+    if (widget.goToChildProfileWhenDone) {
+      if (!mounted) return;
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ChildProfile(
+            parentName: parent,
+            phone: widget.phone,
+          ),
+        ),
+      );
+      return;
+    }
+
     final hasProfile = await AuthService.instance.hasChildProfile();
     if (!mounted) return;
     if (hasProfile) {
@@ -118,7 +136,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
         context,
         MaterialPageRoute(
           builder: (_) => ChildProfile(
-            parentName: widget.parentName,
+            parentName: parent,
             phone: widget.phone,
           ),
         ),

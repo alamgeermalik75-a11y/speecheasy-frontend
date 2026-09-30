@@ -24,6 +24,15 @@ class _Signin1State extends State<Signin1> {
   bool _busy = false;
 
   @override
+  void dispose() {
+    PatientAuthService.instance.onGoogleSignInSuccess = null;
+    PatientAuthService.instance.onGoogleSignInError = null;
+    emailController.dispose();
+    passwordController.dispose();
+    super.dispose();
+  }
+
+  @override
   void initState() {
     super.initState();
     PatientAuthService.instance.onGoogleSignInSuccess = () {
@@ -41,6 +50,11 @@ class _Signin1State extends State<Signin1> {
           return;
         }
         _goAfterAuth();
+      }
+    };
+    PatientAuthService.instance.onGoogleSignInError = (errorMsg) {
+      if (mounted) {
+        Field.CustomAlertBox(context, errorMsg);
       }
     };
     // Pre-initialize Google Sign In on web so the GIS button is ready to render

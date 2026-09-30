@@ -26,6 +26,18 @@ class _SignupState extends State<Signup> {
   bool _busy = false;
 
   @override
+  void dispose() {
+    PatientAuthService.instance.onGoogleSignInSuccess = null;
+    PatientAuthService.instance.onGoogleSignInError = null;
+    emailController.dispose();
+    usernameController.dispose();
+    passwordController.dispose();
+    confirmPasswordController.dispose();
+    phoneController.dispose();
+    super.dispose();
+  }
+
+  @override
   void initState() {
     super.initState();
     PatientAuthService.instance.onGoogleSignInSuccess = () async {
@@ -36,6 +48,7 @@ class _SignupState extends State<Signup> {
           MaterialPageRoute(
             builder: (_) => VerifyEmailScreen(
               parentName: AuthService.instance.parentNameHint(),
+              goToChildProfileWhenDone: true,
             ),
           ),
         );
@@ -57,6 +70,11 @@ class _SignupState extends State<Signup> {
             ),
           ),
         );
+      }
+    };
+    PatientAuthService.instance.onGoogleSignInError = (errorMsg) {
+      if (mounted) {
+        Field.CustomAlertBox(context, errorMsg);
       }
     };
     // Pre-initialize Google Sign In on web so the GIS button is ready to render
@@ -128,6 +146,7 @@ class _SignupState extends State<Signup> {
             MaterialPageRoute(
               builder: (_) => VerifyEmailScreen(
                 parentName: AuthService.instance.parentNameHint(),
+                goToChildProfileWhenDone: true,
               ),
             ),
           );
