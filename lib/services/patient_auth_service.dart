@@ -5,6 +5,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../utils/constants.dart';
+import '../auth/web_auth_bridge.dart';
 import 'core_backend_service.dart';
 
 class AuthApiException implements Exception {
@@ -102,6 +103,7 @@ class PatientAuthService {
     } finally {
       _initialized = true;
     }
+    _subscribeToGoogleAuthEvents();
   }
 
   VoidCallback? onGoogleSignInSuccess;
@@ -109,6 +111,8 @@ class PatientAuthService {
 
   Future<void> _ensureGoogleInitialized() async {
     if (_googleReady) return;
+    _googleReady = true;
+    _subscribeToGoogleAuthEvents();
     try {
       if (kIsWeb) {
         await GoogleSignIn.instance.initialize(
@@ -119,8 +123,6 @@ class PatientAuthService {
           serverClientId: GoogleAuthConfig.webClientId,
         );
       }
-      _googleReady = true;
-      _subscribeToGoogleAuthEvents();
     } catch (e) {
       debugPrint('GoogleSignIn initialize: $e');
     }
@@ -130,26 +132,48 @@ class PatientAuthService {
   Future<void> ensureGoogleInitializedPublic() => _ensureGoogleInitialized();
 
   Future<Map<String, dynamic>>? _inFlightBackendAuth;
+  bool _subscribed = false;
 
   void _subscribeToGoogleAuthEvents() {
     if (!kIsWeb) return;
-    GoogleSignIn.instance.authenticationEvents.listen((event) async {
-      if (event is GoogleSignInAuthenticationEventSignIn) {
-        try {
-          final account = event.user;
-          final auth = account.authentication;
-          final idToken = auth.idToken;
-          if (idToken != null && idToken.isNotEmpty) {
-            await _authenticateWithBackend(idToken, account.displayName);
-            onGoogleSignInSuccess?.call();
-          }
-        } catch (e) {
-          debugPrint('Error handling GoogleSignIn event: $e');
-          final msg = (e is AuthApiException) ? e.message : e.toString();
-          onGoogleSignInError?.call(msg);
-        }
+    if (_subscribed) return;
+    _subscribed = true;
+
+    // 1. Direct Web Hook: listens to CustomEvent from window (most reliable on web)
+    listenForWebGoogleToken((idToken) async {
+      debugPrint('[PatientAuthService] Captured Google token via web event bridge! Authenticating...');
+      try {
+        await _authenticateWithBackend(idToken, null);
+        onGoogleSignInSuccess?.call();
+      } catch (e) {
+        debugPrint('Error handling Google token via web bridge: $e');
+        final msg = (e is AuthApiException) ? e.message : e.toString();
+        onGoogleSignInError?.call(msg);
       }
     });
+
+    // 2. Plugin stream fallback
+    try {
+      GoogleSignIn.instance.authenticationEvents.listen((event) async {
+        if (event is GoogleSignInAuthenticationEventSignIn) {
+          try {
+            final account = event.user;
+            final auth = account.authentication;
+            final idToken = auth.idToken;
+            if (idToken != null && idToken.isNotEmpty) {
+              await _authenticateWithBackend(idToken, account.displayName);
+              onGoogleSignInSuccess?.call();
+            }
+          } catch (e) {
+            debugPrint('Error handling GoogleSignIn event: $e');
+            final msg = (e is AuthApiException) ? e.message : e.toString();
+            onGoogleSignInError?.call(msg);
+          }
+        }
+      });
+    } catch (e) {
+      debugPrint('Error listening to GoogleSignIn.instance.authenticationEvents: $e');
+    }
   }
 
   Future<Map<String, dynamic>> _authenticateWithBackend(

@@ -42,6 +42,40 @@
     For more details:
     * https://docs.flutter.dev/platform-integration/web/initialization
   -->
+  <script>
+    (function() {
+      function installGisHook() {
+        if (window.google && window.google.accounts && window.google.accounts.id) {
+          if (window.google.accounts.id._speecheasyHooked) return;
+          window.google.accounts.id._speecheasyHooked = true;
+          var originalInit = window.google.accounts.id.initialize;
+          window.google.accounts.id.initialize = function(config) {
+            config = config || {};
+            var originalCallback = config.callback;
+            config.callback = function(response) {
+              console.log("[SpeechEasy] Captured Google Identity response!", response);
+              if (response && response.credential) {
+                window.dispatchEvent(new CustomEvent('speecheasy_google_token', { detail: response.credential }));
+              }
+              if (typeof originalCallback === 'function') {
+                try {
+                  originalCallback(response);
+                } catch (err) {
+                  console.error("[SpeechEasy] Error in original GIS callback:", err);
+                }
+              }
+            };
+            console.log("[SpeechEasy] Wrapped google.accounts.id.initialize callback successfully.");
+            return originalInit.call(this, config);
+          };
+          console.log("[SpeechEasy] GIS hook successfully installed.");
+        } else {
+          setTimeout(installGisHook, 30);
+        }
+      }
+      installGisHook();
+    })();
+  </script>
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>

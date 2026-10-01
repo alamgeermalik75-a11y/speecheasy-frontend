@@ -43,7 +43,7 @@ class _Signin1State extends State<Signin1> {
             MaterialPageRoute(
               builder: (_) => VerifyEmailScreen(
                 parentName: AuthService.instance.parentNameHint(),
-                goToChildProfileWhenDone: false,
+                goToChildProfileWhenDone: true,
               ),
             ),
           );
@@ -288,9 +288,9 @@ class _Signin1State extends State<Signin1> {
                   busy: _busy,
                 ),
                 SizedBox(height: 15),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.center,
+                Wrap(
+                  alignment: WrapAlignment.center,
+                  crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
                     Text(
                       "New here?",
