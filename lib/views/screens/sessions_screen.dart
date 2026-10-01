@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../../services/core_backend_service.dart';
@@ -662,63 +663,291 @@ class _SessionsScreenState extends State<SessionsScreen> {
 
   Widget _buildLinkedDoctorCard() {
     final doc = _myDoctorInfo ?? {};
-    final docName = doc['full_name'] ?? 'Assigned Doctor';
-    final qualification = doc['qualification'] ?? 'Speech Therapist';
+    final docName = (doc['full_name'] ?? doc['name'] ?? 'Assigned Doctor').toString();
+    final qualification = (doc['qualification'] ?? doc['specialty'] ?? 'Speech Specialist').toString();
     final fee = doc['consultation_fee'];
     final exp = doc['years_of_experience'];
     final rating = doc['rating'];
+    final phone = doc['phone']?.toString().trim();
+    final email = doc['email']?.toString().trim();
+    final docCode = doc['doctor_code']?.toString().trim();
+    final languages = doc['languages_spoken']?.toString().trim();
 
     return Container(
-      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFFF3F0E9),
-        borderRadius: BorderRadius.circular(16),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(color: const Color(0xFFEDEAE0)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
       ),
-      child: Row(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const CircleAvatar(
-            radius: 22,
-            backgroundColor: Color(0xFF38796D),
-            child: Text('🩺', style: TextStyle(fontSize: 18)),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  docName,
-                  style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.black87),
-                ),
-                Text(
-                  exp != null ? '$qualification · $exp yrs exp' : qualification,
-                  style: GoogleFonts.poppins(fontSize: 12, color: Colors.black54),
-                ),
-              ],
-            ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
+          // Header Row: Assigned Doctor Badge + Doctor Code
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              if (fee != null)
-                Text(
-                  'PKR $fee',
-                  style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: const Color(0xFF38796D), fontSize: 13),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFD6F0EA),
+                  borderRadius: BorderRadius.circular(12),
                 ),
-              if (rating != null && (rating as num) > 0)
-                Row(
+                child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.star, color: Colors.amber, size: 14),
-                    const SizedBox(width: 2),
+                    const Icon(Icons.verified, color: Color(0xFF2E6F65), size: 14),
+                    const SizedBox(width: 4),
                     Text(
-                      rating.toString(),
-                      style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.bold),
+                      'ASSIGNED DOCTOR',
+                      style: GoogleFonts.poppins(
+                        color: const Color(0xFF2E6F65),
+                        fontWeight: FontWeight.bold,
+                        fontSize: 10.5,
+                        letterSpacing: 0.5,
+                      ),
                     ),
                   ],
                 ),
+              ),
+              if (docCode != null && docCode.isNotEmpty)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF3F0E9),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: const Color(0xFFEDEAE0)),
+                  ),
+                  child: Text(
+                    'Code: $docCode',
+                    style: GoogleFonts.poppins(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black54,
+                    ),
+                  ),
+                ),
             ],
+          ),
+          const SizedBox(height: 12),
+
+          // Doctor Avatar, Name, Qualification, Rating & Fee
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const CircleAvatar(
+                radius: 24,
+                backgroundColor: Color(0xFF38796D),
+                child: Text('🧑‍⚕️', style: TextStyle(fontSize: 22)),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      docName,
+                      style: GoogleFonts.poppins(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      exp != null ? '$qualification · $exp yrs exp' : qualification,
+                      style: GoogleFonts.poppins(fontSize: 12, color: Colors.black54),
+                    ),
+                    if (languages != null && languages.isNotEmpty) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        'Speaks: $languages',
+                        style: GoogleFonts.poppins(fontSize: 11, color: Colors.black45),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  if (fee != null)
+                    Text(
+                      'PKR $fee',
+                      style: GoogleFonts.poppins(
+                        fontWeight: FontWeight.bold,
+                        color: const Color(0xFF38796D),
+                        fontSize: 14,
+                      ),
+                    ),
+                  if (rating != null && (rating as num) > 0) ...[
+                    const SizedBox(height: 2),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.star, color: Colors.amber, size: 14),
+                        const SizedBox(width: 2),
+                        Text(
+                          '$rating / 5.0',
+                          style: GoogleFonts.poppins(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black87,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          const Divider(height: 1, color: Color(0xFFF0ECE3)),
+          const SizedBox(height: 12),
+
+          // Contact Details Section
+          Text(
+            'Doctor Contact Information',
+            style: GoogleFonts.poppins(
+              fontWeight: FontWeight.w600,
+              fontSize: 12,
+              color: Colors.black87,
+            ),
+          ),
+          const SizedBox(height: 8),
+
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFAF8F5),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFF0ECE3)),
+            ),
+            child: Column(
+              children: [
+                // Phone row
+                InkWell(
+                  onTap: (phone != null && phone.isNotEmpty)
+                      ? () {
+                          Clipboard.setData(ClipboardData(text: phone));
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              duration: const Duration(seconds: 2),
+                              backgroundColor: const Color(0xFF38796D),
+                              content: Text('Phone copied: $phone', style: GoogleFonts.poppins(color: Colors.white)),
+                            ),
+                          );
+                        }
+                      : null,
+                  borderRadius: BorderRadius.circular(8),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFD6F0EA),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Icon(Icons.phone, size: 15, color: Color(0xFF2E6F65)),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Phone Number',
+                                style: GoogleFonts.poppins(fontSize: 10.5, color: Colors.black54),
+                              ),
+                              Text(
+                                (phone != null && phone.isNotEmpty) ? phone : 'Contact doctor for number',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.black87,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (phone != null && phone.isNotEmpty)
+                          const Icon(Icons.copy_rounded, size: 15, color: Color(0xFF38796D)),
+                      ],
+                    ),
+                  ),
+                ),
+
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 6),
+                  child: Divider(height: 1, color: Color(0xFFEDEAE0)),
+                ),
+
+                // Email row
+                InkWell(
+                  onTap: (email != null && email.isNotEmpty)
+                      ? () {
+                          Clipboard.setData(ClipboardData(text: email));
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              duration: const Duration(seconds: 2),
+                              backgroundColor: const Color(0xFF38796D),
+                              content: Text('Email copied: $email', style: GoogleFonts.poppins(color: Colors.white)),
+                            ),
+                          );
+                        }
+                      : null,
+                  borderRadius: BorderRadius.circular(8),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFD6F0EA),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Icon(Icons.email_outlined, size: 15, color: Color(0xFF2E6F65)),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Email Address',
+                                style: GoogleFonts.poppins(fontSize: 10.5, color: Colors.black54),
+                              ),
+                              Text(
+                                (email != null && email.isNotEmpty) ? email : 'Contact doctor for email',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.black87,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (email != null && email.isNotEmpty)
+                          const Icon(Icons.copy_rounded, size: 15, color: Color(0xFF38796D)),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -849,10 +1078,13 @@ class _SessionsScreenState extends State<SessionsScreen> {
     final age = patient['age'];
 
     final doctor = (appt['doctor'] as Map?) ?? {};
-    final doctorName = doctor['full_name']?.toString() ?? 'Speech Therapist';
-    final qualification = doctor['qualification']?.toString();
-    final fee = doctor['consultation_fee'];
-    final rating = doctor['rating'];
+    final doctorName = (doctor['full_name'] ?? doctor['name'] ?? _myDoctorInfo?['full_name'] ?? 'Speech Therapist').toString();
+    final qualification = (doctor['qualification'] ?? doctor['specialty'] ?? _myDoctorInfo?['qualification'])?.toString();
+    final fee = doctor['consultation_fee'] ?? _myDoctorInfo?['consultation_fee'];
+    final rating = doctor['rating'] ?? _myDoctorInfo?['rating'];
+    final docPhone = (doctor['phone'] ?? _myDoctorInfo?['phone'])?.toString().trim();
+    final docEmail = (doctor['email'] ?? _myDoctorInfo?['email'])?.toString().trim();
+    final docCode = (doctor['doctor_code'] ?? _myDoctorInfo?['doctor_code'])?.toString().trim();
 
     return Container(
       decoration: BoxDecoration(
@@ -946,39 +1178,141 @@ class _SessionsScreenState extends State<SessionsScreen> {
             ),
             child: Column(
               children: [
-                Row(
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const CircleAvatar(
-                      radius: 16,
-                      backgroundColor: Color(0xFFD6F0EA),
-                      child: Text('🩺', style: TextStyle(fontSize: 14)),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            doctorName,
-                            style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 13),
+                    Row(
+                      children: [
+                        const CircleAvatar(
+                          radius: 16,
+                          backgroundColor: Color(0xFFD6F0EA),
+                          child: Text('🩺', style: TextStyle(fontSize: 14)),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Flexible(
+                                    child: Text(
+                                      doctorName,
+                                      style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 13),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  if (docCode != null && docCode.isNotEmpty) ...[
+                                    const SizedBox(width: 6),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFE6F4EA),
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: Text(
+                                        docCode,
+                                        style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.bold, color: const Color(0xFF137333)),
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                              if (qualification != null && qualification.isNotEmpty)
+                                Text(
+                                  qualification,
+                                  style: GoogleFonts.poppins(fontSize: 11, color: Colors.black54),
+                                ),
+                            ],
                           ),
-                          if (qualification != null && qualification.isNotEmpty)
-                            Text(
-                              qualification,
-                              style: GoogleFonts.poppins(fontSize: 11, color: Colors.black54),
+                        ),
+                        if (fee != null)
+                          Text(
+                            'PKR $fee',
+                            style: GoogleFonts.poppins(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                              color: const Color(0xFF38796D),
                             ),
-                        ],
-                      ),
+                          ),
+                      ],
                     ),
-                    if (fee != null)
-                      Text(
-                        'PKR $fee',
-                        style: GoogleFonts.poppins(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 12,
-                          color: const Color(0xFF38796D),
+
+                    // Doctor Phone & Email details
+                    if ((docPhone != null && docPhone.isNotEmpty) || (docEmail != null && docEmail.isNotEmpty)) ...[
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF3F0E9),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Column(
+                          children: [
+                            if (docPhone != null && docPhone.isNotEmpty)
+                              InkWell(
+                                onTap: () {
+                                  Clipboard.setData(ClipboardData(text: docPhone));
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      duration: const Duration(seconds: 2),
+                                      backgroundColor: const Color(0xFF38796D),
+                                      content: Text('Doctor phone copied: $docPhone', style: GoogleFonts.poppins(color: Colors.white)),
+                                    ),
+                                  );
+                                },
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(vertical: 2),
+                                  child: Row(
+                                    children: [
+                                      const Icon(Icons.phone, size: 12, color: Color(0xFF2E6F65)),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        docPhone,
+                                        style: GoogleFonts.poppins(fontSize: 11.5, fontWeight: FontWeight.w600, color: Colors.black87),
+                                      ),
+                                      const Spacer(),
+                                      const Icon(Icons.copy_rounded, size: 11, color: Colors.black38),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            if (docPhone != null && docPhone.isNotEmpty && docEmail != null && docEmail.isNotEmpty)
+                              const Divider(height: 8, color: Color(0xFFE2DDD2)),
+                            if (docEmail != null && docEmail.isNotEmpty)
+                              InkWell(
+                                onTap: () {
+                                  Clipboard.setData(ClipboardData(text: docEmail));
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      duration: const Duration(seconds: 2),
+                                      backgroundColor: const Color(0xFF38796D),
+                                      content: Text('Doctor email copied: $docEmail', style: GoogleFonts.poppins(color: Colors.white)),
+                                    ),
+                                  );
+                                },
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(vertical: 2),
+                                  child: Row(
+                                    children: [
+                                      const Icon(Icons.email_outlined, size: 12, color: Color(0xFF2E6F65)),
+                                      const SizedBox(width: 6),
+                                      Expanded(
+                                        child: Text(
+                                          docEmail,
+                                          style: GoogleFonts.poppins(fontSize: 11.5, fontWeight: FontWeight.w500, color: Colors.black87),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                      const Icon(Icons.copy_rounded, size: 11, color: Colors.black38),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                          ],
                         ),
                       ),
+                    ],
                   ],
                 ),
                 const SizedBox(height: 8),

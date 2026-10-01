@@ -583,6 +583,30 @@ class _MyTherapistScreenState extends State<MyTherapistScreen> {
                   title: Text('Rating', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
                   subtitle: Text('${doctor['rating'] ?? 'N/A'}', style: GoogleFonts.poppins(color: Colors.black54)),
                 ),
+                if (doctor['doctor_code'] != null && doctor['doctor_code'].toString().isNotEmpty) ...[
+                  const Divider(height: 1, color: Colors.black26, thickness: 0.7),
+                  ListTile(
+                    leading: const Icon(Icons.badge_outlined, color: Color(0xFF38796D)),
+                    title: Text('Doctor Code', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+                    subtitle: Text('${doctor['doctor_code']}', style: GoogleFonts.poppins(color: Colors.black87)),
+                  ),
+                ],
+                if (doctor['phone'] != null && doctor['phone'].toString().isNotEmpty) ...[
+                  const Divider(height: 1, color: Colors.black26, thickness: 0.7),
+                  ListTile(
+                    leading: const Icon(Icons.phone_outlined, color: Color(0xFF38796D)),
+                    title: Text('Phone', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+                    subtitle: Text('${doctor['phone']}', style: GoogleFonts.poppins(color: Colors.black87)),
+                  ),
+                ],
+                if (doctor['email'] != null && doctor['email'].toString().isNotEmpty) ...[
+                  const Divider(height: 1, color: Colors.black26, thickness: 0.7),
+                  ListTile(
+                    leading: const Icon(Icons.email_outlined, color: Color(0xFF38796D)),
+                    title: Text('Email', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+                    subtitle: Text('${doctor['email']}', style: GoogleFonts.poppins(color: Colors.black87)),
+                  ),
+                ],
                 if (doctor['consultation_fee'] != null) ...[
                   const Divider(height: 1, color: Colors.black26, thickness: 0.7),
                   ListTile(
