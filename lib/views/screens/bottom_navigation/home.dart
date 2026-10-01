@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -38,6 +39,7 @@ class _HomeState extends State<Home> {
   bool doctorLinked = false;
   Map<String, dynamic>? myDoctorInfo;
   bool profileLoading = true;
+  Timer? _doctorPollTimer;
 
   @override
   void initState() {
@@ -47,7 +49,14 @@ class _HomeState extends State<Home> {
     fetchDailyTip();
     fetchUnreadCount();
     fetchMyDoctorStatus();
+    _startDoctorPolling();
     Future.microtask(() => context.read<LibraryController>().loadAlphabets());
+  }
+
+  @override
+  void dispose() {
+    _doctorPollTimer?.cancel();
+    super.dispose();
   }
 
   Future<void> fetchHomeData() async {
@@ -126,14 +135,76 @@ class _HomeState extends State<Home> {
     }
   }
 
+  void _startDoctorPolling() {
+    _doctorPollTimer?.cancel();
+    _doctorPollTimer = Timer.periodic(const Duration(seconds: 4), (_) {
+      if (!mounted) return;
+      _pollDoctorStatus();
+    });
+  }
+
+  Future<void> _pollDoctorStatus() async {
+    try {
+      final res = await CoreBackendService().getMyDoctorStatus();
+      if (!mounted) return;
+
+      if (res != null) {
+        final status = res['status'];
+        if (status == 'approved') {
+          final wasNotLinked = !doctorLinked;
+          setState(() {
+            doctorLinked = true;
+            myDoctorInfo = res['doctor'];
+            myDoctorRequest = {'doctor_id': res['doctor']?['id']};
+          });
+
+          if (wasNotLinked) {
+            fetchUnreadCount();
+            final docName = myDoctorInfo?['full_name'] ?? 'Your doctor';
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Row(
+                    children: [
+                      const Icon(Icons.check_circle, color: Colors.white),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          '🎉 Great news! Dr. $docName has accepted your registration request.',
+                          style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.w500),
+                        ),
+                      ),
+                    ],
+                  ),
+                  backgroundColor: const Color(0xff38796D),
+                  duration: const Duration(seconds: 5),
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+            }
+          }
+        } else if (status == 'pending') {
+          if (doctorLinked || myDoctorRequest == null) {
+            setState(() {
+              doctorLinked = false;
+              myDoctorRequest = res['request'];
+            });
+          }
+        } else {
+          if (doctorLinked || myDoctorRequest != null) {
+            setState(() {
+              doctorLinked = false;
+              myDoctorRequest = null;
+              myDoctorInfo = null;
+            });
+          }
+        }
+      }
+    } catch (_) {}
+  }
+
   Future<void> fetchMyDoctorStatus() async {
     if (!mounted) return;
-    setState(() {
-      myDoctorRequest = null;
-      myDoctorInfo = null;
-      doctorLinked = false;
-    });
-
     try {
       final res = await CoreBackendService().getMyDoctorStatus();
       if (res != null && mounted) {
@@ -148,6 +219,13 @@ class _HomeState extends State<Home> {
           setState(() {
             doctorLinked = false;
             myDoctorRequest = res['request'];
+            myDoctorInfo = null;
+          });
+        } else {
+          setState(() {
+            doctorLinked = false;
+            myDoctorRequest = null;
+            myDoctorInfo = null;
           });
         }
       }
