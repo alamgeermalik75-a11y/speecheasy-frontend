@@ -224,57 +224,60 @@ class _FindDoctorScreenState extends State<FindDoctorScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      ListTile(
-                        contentPadding: EdgeInsets.symmetric(horizontal: 0),
-                        leading: CircleAvatar(
-                          radius: 40,
-                          child: Text('🧑‍⚕️', style: TextStyle(fontSize: 25),),
-                        ),
-                        title:Text(
-                          t['full_name'] ?? 'Unnamed',
-                          style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 16),
-                        ),
-                        subtitle: Column(
-                          mainAxisAlignment: MainAxisAlignment.start,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const CircleAvatar(
+                            radius: 30,
+                            child: Text('🧑‍⚕️', style: TextStyle(fontSize: 24)),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  t['qualification'] ?? '',
-                                  style: GoogleFonts.poppins(color: Colors.black54, fontSize: 13),
+                                  t['full_name'] ?? 'Unnamed',
+                                  style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 16),
                                 ),
-                                SizedBox(width: 4),
-                                Text("⋅", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),),
-                                SizedBox(width: 4),
-                                if (t['years_of_experience'] != null)
-                                  Text(
-                                    '${t['years_of_experience']} years experience',
-                                    style: GoogleFonts.poppins(color: Colors.black54, fontSize: 13),
-                                  ),
-                              ],
-                            ),
-                            SizedBox(height: 4),
-                            Row(
-                              children: [
+                                const SizedBox(height: 4),
                                 Text(
-                                  '🗣️ ${t['languages_spoken'] ?? ''}',
-                                  style: GoogleFonts.poppins(color: Colors.black, fontSize: 13),
+                                  t['years_of_experience'] != null
+                                      ? '${t['qualification'] ?? ''} · ${t['years_of_experience']} yrs exp'
+                                      : (t['qualification'] ?? ''),
+                                  style: GoogleFonts.poppins(color: Colors.black54, fontSize: 12),
                                 ),
-                                SizedBox(width: 10),
-                                if (t['rating'] != null)
-                                  Text(
-                                    '⭐ ${t['rating']}',
-                                    style: GoogleFonts.poppins(color: Colors.black, fontSize: 13),
+                                const SizedBox(height: 4),
+                                Wrap(
+                                  spacing: 8,
+                                  runSpacing: 4,
+                                  crossAxisAlignment: WrapCrossAlignment.center,
+                                  children: [
+                                    if (t['languages_spoken'] != null && t['languages_spoken'].toString().isNotEmpty)
+                                      Text(
+                                        '🗣️ ${t['languages_spoken']}',
+                                        style: GoogleFonts.poppins(color: Colors.black87, fontSize: 12),
+                                      ),
+                                    if (t['rating'] != null)
+                                      Text(
+                                        '⭐ ${t['rating']}',
+                                        style: GoogleFonts.poppins(color: Colors.black87, fontSize: 12, fontWeight: FontWeight.w600),
+                                      ),
+                                  ],
+                                ),
+                                const SizedBox(height: 6),
+                                Text(
+                                  'Rs. ${t['consultation_fee'] ?? 0} / session',
+                                  style: GoogleFonts.poppins(
+                                    color: const Color(0xFF38796D),
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.bold,
                                   ),
+                                ),
                               ],
                             ),
-                            SizedBox(height: 5,),
-                            Text('Rs. ${t['consultation_fee'] ?? 0}/ session',
-                              style: GoogleFonts.poppins(color: Colors.black, fontSize: 13, fontWeight: FontWeight.bold),
-                            )
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 12),
                       SizedBox(

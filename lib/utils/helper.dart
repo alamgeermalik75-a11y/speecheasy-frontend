@@ -151,28 +151,38 @@ class Field extends StatelessWidget {
 }
 
 class Grid extends StatelessWidget {
-  String text;
-  String img;
-  Grid({super.key, required this.text, required this.img});
+  final String text;
+  final String img;
+  const Grid({super.key, required this.text, required this.img});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
       decoration: BoxDecoration(
-          color: Color(0xFFf3f0e9),
-          borderRadius: BorderRadius.circular(17)
+        color: const Color(0xFFf3f0e9),
+        borderRadius: BorderRadius.circular(17),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Image.asset(img,
-            height: 80,
-            width: 80,
+          Expanded(
+            child: Center(
+              child: Image.asset(
+                img,
+                fit: BoxFit.contain,
+              ),
+            ),
           ),
-          // SizedBox(height: 2,),
-          Text(text,style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600),)
+          const SizedBox(height: 6),
+          Text(
+            text,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+            style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600),
+          ),
         ],
       ),
     );

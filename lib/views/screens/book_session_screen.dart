@@ -289,110 +289,114 @@ class _BookSessionScreenState extends State<BookSessionScreen> {
         ),
       ),
       body: isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: Color(0xFFf3f0e9),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: const Color(0xFFEDEAE0)),
-              ),
-              child: Row(
-                children: [
-                  const CircleAvatar(radius: 24, child: Text('🩺')),
-                  const SizedBox(width: 12),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(widget.doctor['full_name'] ?? '', style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
-                      Text(
-                        '${widget.doctor['qualification'] ?? ''} · ${widget.doctor['years_of_experience'] ?? '?'} yrs',
-                        style: GoogleFonts.poppins(fontSize: 12, color: Colors.black),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 20),
-            Text('SELECT DATE', style: GoogleFonts.poppins(fontSize: 12, color: Colors.black, letterSpacing: 1, fontWeight: FontWeight.w600)),
-            const SizedBox(height: 8),
-            SizedBox(
-              height: 70,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                itemCount: next7Days.length,
-                itemBuilder: (context, index) {
-                  final date = next7Days[index];
-                  final isSelected = selectedDate != null &&
-                      date.year == selectedDate!.year &&
-                      date.month == selectedDate!.month &&
-                      date.day == selectedDate!.day;
-
-                  return GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        selectedDate = date;
-                        selectedSlot = null;
-                      });
-                      fetchSlotsForDate(date);
-                    },
-                    child: Container(
-                      width: 55,
-                      margin: const EdgeInsets.only(right: 8),
+          ? const Center(child: CircularProgressIndicator(color: Color(0xFF38796D)))
+          : SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
-                        color: isSelected ? const Color(0xff38796D) : Colors.white,
-                        borderRadius: BorderRadius.circular(14),
+                        color: const Color(0xFFf3f0e9),
+                        borderRadius: BorderRadius.circular(16),
                         border: Border.all(color: const Color(0xFFEDEAE0)),
                       ),
-                      alignment: Alignment.center,
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
+                      child: Row(
                         children: [
-                          Text(
-                            DateFormat('E').format(date),
-                            style: GoogleFonts.poppins(fontSize: 11, color: isSelected ? Colors.white70 : Colors.black54),
-                          ),
-                          Text(
-                            DateFormat('d').format(date),
-                            style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: isSelected ? Colors.white : Colors.black),
+                          const CircleAvatar(radius: 24, child: Text('🩺')),
+                          const SizedBox(width: 12),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(widget.doctor['full_name'] ?? '', style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
+                              Text(
+                                '${widget.doctor['qualification'] ?? ''} · ${widget.doctor['years_of_experience'] ?? '?'} yrs',
+                                style: GoogleFonts.poppins(fontSize: 12, color: Colors.black54),
+                              ),
+                            ],
                           ),
                         ],
                       ),
                     ),
-                  );
-                },
-              ),
-            ),
-            const SizedBox(height: 20),
-            Text('AVAILABLE TIME SLOTS', style: GoogleFonts.poppins(fontSize: 12, color: Colors.black, letterSpacing: 1)),
-            const SizedBox(height: 8),
-            if (selectedDate == null)
-              Text('Pick a date first', style: GoogleFonts.poppins(color: Colors.black))
-            else
-              buildSlots(),
-            const SizedBox(height: 30),
-            if (selectedDate != null && selectedSlot != null)
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xff38796D),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-                  ),
-                  onPressed: showReviewSheet,
-                  child: Text('Book a session', style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 20),
+                    Text('SELECT DATE', style: GoogleFonts.poppins(fontSize: 12, color: Colors.black, letterSpacing: 1, fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 8),
+                    SizedBox(
+                      height: 70,
+                      child: ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: next7Days.length,
+                        itemBuilder: (context, index) {
+                          final date = next7Days[index];
+                          final isSelected = selectedDate != null &&
+                              date.year == selectedDate!.year &&
+                              date.month == selectedDate!.month &&
+                              date.day == selectedDate!.day;
+
+                          return GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                selectedDate = date;
+                                selectedSlot = null;
+                              });
+                              fetchSlotsForDate(date);
+                            },
+                            child: Container(
+                              width: 55,
+                              margin: const EdgeInsets.only(right: 8),
+                              decoration: BoxDecoration(
+                                color: isSelected ? const Color(0xff38796D) : Colors.white,
+                                borderRadius: BorderRadius.circular(14),
+                                border: Border.all(color: const Color(0xFFEDEAE0)),
+                              ),
+                              alignment: Alignment.center,
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    DateFormat('E').format(date),
+                                    style: GoogleFonts.poppins(fontSize: 11, color: isSelected ? Colors.white70 : Colors.black54),
+                                  ),
+                                  Text(
+                                    DateFormat('d').format(date),
+                                    style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: isSelected ? Colors.white : Colors.black),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    Text('AVAILABLE TIME SLOTS', style: GoogleFonts.poppins(fontSize: 12, color: Colors.black, letterSpacing: 1)),
+                    const SizedBox(height: 8),
+                    if (selectedDate == null)
+                      Text('Pick a date first', style: GoogleFonts.poppins(color: Colors.black))
+                    else
+                      buildSlots(),
+                    const SizedBox(height: 30),
+                    if (selectedDate != null && selectedSlot != null)
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xff38796D),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                          ),
+                          onPressed: showReviewSheet,
+                          child: Text('Book a session', style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.w600)),
+                        ),
+                      ),
+                    const SizedBox(height: 20),
+                  ],
                 ),
               ),
-          ],
-        ),
-      ),
+            ),
     );
   }
 }

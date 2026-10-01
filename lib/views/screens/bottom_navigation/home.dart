@@ -268,8 +268,8 @@ class _HomeState extends State<Home> {
     String trailingText = '';
 
     if (myDoctorRequest == null) {
-      title = 'Find a Doctor';
-      subtitle = 'Register so a therapist can follow along';
+      title = 'My Therapist';
+      subtitle = 'First you need to link with a doctor';
     } else if (doctorLinked) {
       title = '$childName, registered with Dr. ${myDoctorInfo?['full_name'] ?? ''}';
       subtitle = myDoctorInfo?['qualification'] ?? '';
@@ -292,12 +292,12 @@ class _HomeState extends State<Home> {
         subtitle: Text(subtitle, style: GoogleFonts.poppins(color: Colors.black54)),
         trailing: trailingText.isNotEmpty
             ? Text(trailingText, style: const TextStyle(fontSize: 18))
-            : Icon(Icons.chevron_right_outlined, color: Color(0xFF2E6F65)),
+            : const Icon(Icons.chevron_right_outlined, color: Color(0xFF2E6F65)),
         onTap: () async {
           if (myDoctorRequest == null) {
             await Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => const FindDoctorScreen()),
+              MaterialPageRoute(builder: (context) => const MyTherapistScreen()),
             );
             fetchMyDoctorStatus();
           } else if (doctorLinked && myDoctorInfo != null) {
@@ -306,8 +306,13 @@ class _HomeState extends State<Home> {
               MaterialPageRoute(builder: (context) => MyTherapistScreen(doctor: myDoctorInfo!, patientRow: myDoctorRequest!)),
             );
             fetchMyDoctorStatus();
+          } else {
+            await Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const MyTherapistScreen()),
+            );
+            fetchMyDoctorStatus();
           }
-          // pending state: tapping does nothing now, just shows the status
         },
       ),
     );
@@ -524,11 +529,11 @@ class _HomeState extends State<Home> {
                 ],
                 const SizedBox(height: 17),
                 Container(
-                  padding: EdgeInsets.symmetric(horizontal: 10, vertical: 15),
-                  height: 180,
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
+                  constraints: const BoxConstraints(minHeight: 160),
                   width: double.infinity,
                   decoration: BoxDecoration(
-                    color: Color(0xFFD6F0EA),
+                    color: const Color(0xFFD6F0EA),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Column(
@@ -539,20 +544,20 @@ class _HomeState extends State<Home> {
                         "TODAY'S PRACTICE",
                         style: GoogleFonts.poppins(
                           fontSize: 15,
-                          color: Color(0XFF3F8E58),
+                          color: const Color(0XFF3F8E58),
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      SizedBox(height: 10),
+                      const SizedBox(height: 10),
                       Text(
                         'Practice the $currentSound sound',
                         style: GoogleFonts.poppins(
                           color: Colors.black,
-                          fontSize: 25,
+                          fontSize: 24,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      SizedBox(height: 10),
+                      const SizedBox(height: 10),
                       ClipRRect(
                         borderRadius: BorderRadius.circular(10),
                         child: LinearProgressIndicator(
@@ -564,10 +569,10 @@ class _HomeState extends State<Home> {
                           ),
                         ),
                       ),
-                      SizedBox(height: 10),
+                      const SizedBox(height: 12),
                       ElevatedButton(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Color(0xff38796D),
+                          backgroundColor: const Color(0xff38796D),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(18),
                           ),
@@ -576,7 +581,7 @@ class _HomeState extends State<Home> {
                         child: Text(
                           'Continue Practice',
                           style: GoogleFonts.poppins(
-                            fontSize: 17,
+                            fontSize: 16,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -584,7 +589,7 @@ class _HomeState extends State<Home> {
                     ],
                   ),
                 ),
-                SizedBox(height: 20),
+                const SizedBox(height: 20),
                 Text(
                   'Quick Actions',
                   style: GoogleFonts.poppins(
@@ -593,14 +598,14 @@ class _HomeState extends State<Home> {
                     fontWeight: FontWeight.w500,
                   ),
                 ),
-                SizedBox(height: 10),
+                const SizedBox(height: 10),
                 GridView.count(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
                   mainAxisSpacing: 10,
                   crossAxisSpacing: 10,
                   crossAxisCount: 2,
-                  childAspectRatio: 1.4,
+                  childAspectRatio: 1.25,
                   children: [
                     InkWell(
                       child: Grid(text: 'Find Doctor', img: "assets/images/img5.png"),

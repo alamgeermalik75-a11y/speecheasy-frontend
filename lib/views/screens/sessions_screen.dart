@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
@@ -24,11 +25,79 @@ class _SessionsScreenState extends State<SessionsScreen> {
   Map<String, dynamic>? _pendingRequest;
   String _childName = 'Child';
   bool _isCancelling = false;
+  Timer? _pollTimer;
 
   @override
   void initState() {
     super.initState();
     _loadSessionsData();
+    _startPolling();
+  }
+
+  @override
+  void dispose() {
+    _pollTimer?.cancel();
+    super.dispose();
+  }
+
+  void _startPolling() {
+    _pollTimer?.cancel();
+    _pollTimer = Timer.periodic(const Duration(seconds: 4), (_) {
+      if (!mounted) return;
+      _pollSessionsSilently();
+    });
+  }
+
+  Future<void> _pollSessionsSilently() async {
+    try {
+      final docStatus = await CoreBackendService().getMyDoctorStatus();
+      if (!mounted || docStatus == null) return;
+
+      final statusStr = docStatus['status'] ?? 'none';
+      if (statusStr == 'approved') {
+        final doc = docStatus['doctor'] as Map<String, dynamic>?;
+        final sessionData = await CoreBackendService().getMySessions();
+        if (!mounted) return;
+
+        List<Map<String, dynamic>> appts = [];
+        int cancels = 0;
+        bool restricted = false;
+
+        if (sessionData != null) {
+          final rawList = sessionData['appointments'] as List? ?? [];
+          appts = rawList.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+          cancels = (sessionData['cancellation_count'] as num?)?.toInt() ?? 0;
+          restricted = sessionData['is_restricted'] == true;
+        }
+
+        setState(() {
+          _myDoctorInfo = doc;
+          _pendingRequest = null;
+          _appointments = appts;
+          _cancellationCount = cancels;
+          _isRestricted = restricted;
+          _linkState = DoctorLinkState.approved;
+        });
+      } else if (statusStr == 'pending') {
+        if (_linkState != DoctorLinkState.pending) {
+          setState(() {
+            _linkState = DoctorLinkState.pending;
+            _pendingRequest = docStatus['request'] as Map<String, dynamic>?;
+            _myDoctorInfo = null;
+            _appointments = [];
+          });
+        }
+      } else {
+        if (_linkState != DoctorLinkState.notLinked) {
+          setState(() {
+            _linkState = DoctorLinkState.notLinked;
+            _myDoctorInfo = null;
+            _pendingRequest = null;
+            _appointments = [];
+          });
+        }
+      }
+    } catch (_) {}
   }
 
   Future<void> _loadSessionsData() async {
@@ -407,6 +476,7 @@ class _SessionsScreenState extends State<SessionsScreen> {
   /// Displayed when patient has no approved doctor and no pending request
   Widget _buildDoctorRequiredView() {
     return SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.all(20),
       child: Container(
         padding: const EdgeInsets.all(24),
@@ -436,7 +506,7 @@ class _SessionsScreenState extends State<SessionsScreen> {
             ),
             const SizedBox(height: 18),
             Text(
-              'Link with a Doctor First',
+              'First You Need to Link with a Doctor',
               textAlign: TextAlign.center,
               style: GoogleFonts.poppins(
                 fontWeight: FontWeight.bold,
@@ -521,6 +591,7 @@ class _SessionsScreenState extends State<SessionsScreen> {
     final docName = _pendingRequest?['doctor_name'] ?? _pendingRequest?['doctor_id'] ?? 'your selected speech therapist';
 
     return SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.all(20),
       child: Container(
         padding: const EdgeInsets.all(24),
@@ -553,7 +624,7 @@ class _SessionsScreenState extends State<SessionsScreen> {
             ),
             const SizedBox(height: 10),
             Text(
-              'Your registration request has been sent to $docName. Once accepted, your therapy session schedule will be unlocked right here.',
+              'Your registration request has been sent to $docName. As soon as the doctor accepts, your therapy sessions will appear here automatically with zero delay.',
               textAlign: TextAlign.center,
               style: GoogleFonts.poppins(
                 fontSize: 13,
