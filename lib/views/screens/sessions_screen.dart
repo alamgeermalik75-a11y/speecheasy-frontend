@@ -439,6 +439,7 @@ class _SessionsScreenState extends State<SessionsScreen> {
                 ElevatedButton.icon(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: _isRestricted ? Colors.grey : const Color(0xFF38796D),
+                    minimumSize: const Size(0, 36),
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                   ),
@@ -1022,6 +1023,7 @@ class _SessionsScreenState extends State<SessionsScreen> {
               alignment: Alignment.centerRight,
               child: OutlinedButton.icon(
                 style: OutlinedButton.styleFrom(
+                  minimumSize: const Size(0, 32),
                   side: const BorderSide(color: Color(0xFFDC2626)),
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
