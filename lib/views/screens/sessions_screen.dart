@@ -5,6 +5,8 @@ import '../../services/core_backend_service.dart';
 import 'book_session_screen.dart';
 import 'find_doctor_screen.dart';
 
+enum DoctorLinkState { loading, notLinked, pending, approved, error }
+
 class SessionsScreen extends StatefulWidget {
   const SessionsScreen({super.key});
 
@@ -13,12 +15,14 @@ class SessionsScreen extends StatefulWidget {
 }
 
 class _SessionsScreenState extends State<SessionsScreen> {
-  bool _isLoading = true;
+  DoctorLinkState _linkState = DoctorLinkState.loading;
   String? _errorMessage;
   List<Map<String, dynamic>> _appointments = [];
   int _cancellationCount = 0;
   bool _isRestricted = false;
   Map<String, dynamic>? _myDoctorInfo;
+  Map<String, dynamic>? _pendingRequest;
+  String _childName = 'Child';
   bool _isCancelling = false;
 
   @override
@@ -29,44 +33,64 @@ class _SessionsScreenState extends State<SessionsScreen> {
 
   Future<void> _loadSessionsData() async {
     setState(() {
-      _isLoading = true;
+      _linkState = DoctorLinkState.loading;
       _errorMessage = null;
     });
 
     try {
-      // 1. Fetch sessions from Railway Core Backend API
-      final sessionData = await CoreBackendService().getMySessions();
-      // 2. Fetch doctor status so patient can book with linked doctor
-      final doctorStatus = await CoreBackendService().getMyDoctorStatus();
+      // 1. Fetch patient profile to get child name
+      final profile = await CoreBackendService().getMyProfile();
+      if (profile != null) {
+        final c = profile['child_name']?.toString();
+        if (c != null && c.isNotEmpty) {
+          _childName = c;
+        }
+      }
 
+      // 2. Fetch Doctor Status first from Railway Backend API
+      final docStatus = await CoreBackendService().getMyDoctorStatus();
       if (!mounted) return;
 
-      if (sessionData != null) {
-        final rawList = sessionData['appointments'] as List? ?? [];
-        final list = rawList.map((e) => Map<String, dynamic>.from(e as Map)).toList();
-        setState(() {
-          _appointments = list;
+      final statusStr = docStatus?['status'] ?? 'none';
+
+      if (statusStr == 'approved') {
+        _myDoctorInfo = docStatus?['doctor'] as Map<String, dynamic>?;
+        _pendingRequest = null;
+
+        // 3. Fetch Sessions from Railway Backend API
+        final sessionData = await CoreBackendService().getMySessions();
+        if (!mounted) return;
+
+        if (sessionData != null) {
+          final rawList = sessionData['appointments'] as List? ?? [];
+          _appointments = rawList.map((e) => Map<String, dynamic>.from(e as Map)).toList();
           _cancellationCount = (sessionData['cancellation_count'] as num?)?.toInt() ?? 0;
           _isRestricted = sessionData['is_restricted'] == true;
-          if (doctorStatus != null && doctorStatus['status'] == 'approved') {
-            _myDoctorInfo = doctorStatus['doctor'] as Map<String, dynamic>?;
-          } else {
-            _myDoctorInfo = null;
-          }
-          _isLoading = false;
-        });
+        } else {
+          _appointments = [];
+          _cancellationCount = 0;
+          _isRestricted = false;
+        }
+        _linkState = DoctorLinkState.approved;
+      } else if (statusStr == 'pending') {
+        _linkState = DoctorLinkState.pending;
+        _pendingRequest = docStatus?['request'] as Map<String, dynamic>?;
+        _myDoctorInfo = null;
+        _appointments = [];
       } else {
-        setState(() {
-          _errorMessage = 'Could not load sessions. Please check your connection.';
-          _isLoading = false;
-        });
+        _linkState = DoctorLinkState.notLinked;
+        _myDoctorInfo = null;
+        _pendingRequest = null;
+        _appointments = [];
       }
     } catch (e) {
       if (!mounted) return;
-      setState(() {
-        _errorMessage = 'An error occurred while loading sessions.';
-        _isLoading = false;
-      });
+      _errorMessage = 'Could not load sessions. Please check your connection.';
+      _linkState = DoctorLinkState.error;
+    } finally {
+      if (mounted) {
+        setState(() {});
+      }
     }
   }
 
@@ -90,8 +114,8 @@ class _SessionsScreenState extends State<SessionsScreen> {
             ),
             const SizedBox(height: 10),
             Text(
-              'Note: You have used $_cancellationCount of 5 permitted cancellations. Reaching 5 will restrict new bookings.',
-              style: GoogleFonts.poppins(fontSize: 12, color: Colors.orange.shade800),
+              'You have used $_cancellationCount of 5 permitted cancellations. Reaching 5 cancellations will lock new appointment bookings.',
+              style: GoogleFonts.poppins(fontSize: 12, color: const Color(0xFFC0432A)),
             ),
           ],
         ),
@@ -129,7 +153,6 @@ class _SessionsScreenState extends State<SessionsScreen> {
             ),
           ),
         );
-        // Refresh sessions immediately
         await _loadSessionsData();
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -167,7 +190,7 @@ class _SessionsScreenState extends State<SessionsScreen> {
         MaterialPageRoute(
           builder: (context) => BookSessionScreen(
             doctor: _myDoctorInfo!,
-            patientName: '',
+            patientName: _childName,
           ),
         ),
       ).then((_) => _loadSessionsData());
@@ -238,7 +261,7 @@ class _SessionsScreenState extends State<SessionsScreen> {
             child: Container(
               margin: const EdgeInsets.all(6),
               decoration: BoxDecoration(
-                color: const Color(0xFFBAB49B).withOpacity(0.2),
+                color: const Color(0x33BAB49B),
                 shape: BoxShape.circle,
               ),
               child: const Icon(Icons.arrow_back, color: Colors.black87, size: 20),
@@ -252,114 +275,380 @@ class _SessionsScreenState extends State<SessionsScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh, color: Color(0xFF38796D)),
-            tooltip: 'Refresh Sessions',
-            onPressed: _isLoading ? null : _loadSessionsData,
+            tooltip: 'Refresh',
+            onPressed: _linkState == DoctorLinkState.loading ? null : _loadSessionsData,
           ),
         ],
       ),
       body: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final isWide = constraints.maxWidth > 650;
-            final horizontalPadding = isWide ? (constraints.maxWidth - 600) / 2 : 16.0;
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 680),
+            child: _buildBodyContent(),
+          ),
+        ),
+      ),
+    );
+  }
 
-            if (_isLoading) {
-              return const Center(
-                child: CircularProgressIndicator(color: Color(0xFF38796D)),
-              );
-            }
+  Widget _buildBodyContent() {
+    if (_linkState == DoctorLinkState.loading) {
+      return const Center(
+        child: CircularProgressIndicator(color: Color(0xFF38796D)),
+      );
+    }
 
-            if (_errorMessage != null) {
-              return Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.error_outline, size: 48, color: Colors.redAccent),
-                      const SizedBox(height: 12),
-                      Text(
-                        _errorMessage!,
-                        textAlign: TextAlign.center,
-                        style: GoogleFonts.poppins(color: Colors.black87, fontSize: 14),
-                      ),
-                      const SizedBox(height: 16),
-                      ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF38796D),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                        onPressed: _loadSessionsData,
-                        child: Text('Retry', style: GoogleFonts.poppins(color: Colors.white)),
-                      ),
-                    ],
+    if (_linkState == DoctorLinkState.error) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.error_outline, size: 48, color: Colors.redAccent),
+              const SizedBox(height: 12),
+              Text(
+                _errorMessage ?? 'An error occurred.',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.poppins(color: Colors.black87, fontSize: 14),
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF38796D),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                onPressed: _loadSessionsData,
+                child: Text('Retry', style: GoogleFonts.poppins(color: Colors.white)),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // STATE: NOT LINKED WITH DOCTOR -> SHOW DIRECT LINK REQUIRED SCREEN
+    if (_linkState == DoctorLinkState.notLinked) {
+      return _buildDoctorRequiredView();
+    }
+
+    // STATE: DOCTOR APPROVAL PENDING
+    if (_linkState == DoctorLinkState.pending) {
+      return _buildPendingApprovalView();
+    }
+
+    // STATE: DOCTOR APPROVED -> SHOW SESSIONS LIST
+    return RefreshIndicator(
+      color: const Color(0xFF38796D),
+      onRefresh: _loadSessionsData,
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Linked Doctor Header Card
+            _buildLinkedDoctorCard(),
+            const SizedBox(height: 14),
+
+            // Cancellation Quota Banner
+            _buildQuotaBanner(),
+            const SizedBox(height: 16),
+
+            // Sessions Header
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Appointments (${_appointments.length})',
+                  style: GoogleFonts.poppins(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
                   ),
                 ),
-              );
-            }
+                ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _isRestricted ? Colors.grey : const Color(0xFF38796D),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                  ),
+                  onPressed: _isRestricted ? null : _navigateToBooking,
+                  icon: const Icon(Icons.add, color: Colors.white, size: 16),
+                  label: Text(
+                    'Book Session',
+                    style: GoogleFonts.poppins(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
 
-            return RefreshIndicator(
-              color: const Color(0xFF38796D),
-              onRefresh: _loadSessionsData,
-              child: SingleChildScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: 12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Cancellation Quota & Restriction Banner
-                    _buildQuotaBanner(),
-                    const SizedBox(height: 16),
+            // Empty State or List of Appointments
+            if (_appointments.isEmpty)
+              _buildEmptyAppointmentsView()
+            else
+              ListView.separated(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: _appointments.length,
+                separatorBuilder: (_, __) => const SizedBox(height: 12),
+                itemBuilder: (context, index) {
+                  return _buildAppointmentCard(_appointments[index]);
+                },
+              ),
+            const SizedBox(height: 40),
+          ],
+        ),
+      ),
+    );
+  }
 
-                    // Header Row with Session Count and Book Button
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Appointments (${_appointments.length})',
-                          style: GoogleFonts.poppins(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black87,
-                          ),
-                        ),
-                        ElevatedButton.icon(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: _isRestricted ? Colors.grey : const Color(0xFF38796D),
-                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                          ),
-                          onPressed: _isRestricted ? null : _navigateToBooking,
-                          icon: const Icon(Icons.add, color: Colors.white, size: 16),
-                          label: Text(
-                            'Book Session',
-                            style: GoogleFonts.poppins(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-
-                    // Empty State or List of Appointments
-                    if (_appointments.isEmpty)
-                      _buildEmptyState()
-                    else
-                      ListView.separated(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: _appointments.length,
-                        separatorBuilder: (_, __) => const SizedBox(height: 12),
-                        itemBuilder: (context, index) {
-                          return _buildAppointmentCard(_appointments[index]);
-                        },
-                      ),
-                    const SizedBox(height: 40),
-                  ],
+  /// Displayed when patient has no approved doctor and no pending request
+  Widget _buildDoctorRequiredView() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
+      child: Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: const Color(0xFFEDEAE0)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.03),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: const BoxDecoration(
+                color: Color(0xFFD6F0EA),
+                shape: BoxShape.circle,
+              ),
+              child: const Text('🩺', style: TextStyle(fontSize: 42)),
+            ),
+            const SizedBox(height: 18),
+            Text(
+              'Link with a Doctor First',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.poppins(
+                fontWeight: FontWeight.bold,
+                fontSize: 20,
+                color: Colors.black87,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              'To book and attend one-on-one therapy sessions, your child must first be linked with an approved SpeechEasy therapist.',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.poppins(
+                fontSize: 13,
+                color: Colors.black54,
+                height: 1.5,
+              ),
+            ),
+            const SizedBox(height: 20),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFBF9F5),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: const Color(0xFFF0ECE3)),
+              ),
+              child: Column(
+                children: [
+                  _buildBenefitRow(Icons.check_circle_outline, 'Personalized 30-min therapy scheduling'),
+                  const SizedBox(height: 10),
+                  _buildBenefitRow(Icons.check_circle_outline, 'Direct clinical progress reviews by your doctor'),
+                  const SizedBox(height: 10),
+                  _buildBenefitRow(Icons.check_circle_outline, 'Tailored articulation & speech guidance'),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF38796D),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                ),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const FindDoctorScreen()),
+                  ).then((_) => _loadSessionsData());
+                },
+                icon: const Icon(Icons.search, color: Colors.white, size: 20),
+                label: Text(
+                  'Find & Link a Doctor',
+                  style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
                 ),
               ),
-            );
-          },
+            ),
+          ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildBenefitRow(IconData icon, String text) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, color: const Color(0xFF38796D), size: 18),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(
+            text,
+            style: GoogleFonts.poppins(fontSize: 12, color: Colors.black87, fontWeight: FontWeight.w500),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Displayed when patient has a pending doctor request
+  Widget _buildPendingApprovalView() {
+    final docName = _pendingRequest?['doctor_name'] ?? _pendingRequest?['doctor_id'] ?? 'your selected speech therapist';
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
+      child: Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: const Color(0xFFEDEAE0)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: const BoxDecoration(
+                color: Color(0xFFFEF3C7),
+                shape: BoxShape.circle,
+              ),
+              child: const Text('⏳', style: TextStyle(fontSize: 42)),
+            ),
+            const SizedBox(height: 18),
+            Text(
+              'Doctor Approval Pending',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.poppins(
+                fontWeight: FontWeight.bold,
+                fontSize: 20,
+                color: Colors.black87,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              'Your registration request has been sent to $docName. Once accepted, your therapy session schedule will be unlocked right here.',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.poppins(
+                fontSize: 13,
+                color: Colors.black54,
+                height: 1.5,
+              ),
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton(
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: Color(0xFF38796D)),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                ),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const FindDoctorScreen()),
+                  ).then((_) => _loadSessionsData());
+                },
+                child: Text(
+                  'Check Request Status',
+                  style: GoogleFonts.poppins(color: const Color(0xFF38796D), fontWeight: FontWeight.w600),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLinkedDoctorCard() {
+    final doc = _myDoctorInfo ?? {};
+    final docName = doc['full_name'] ?? 'Assigned Doctor';
+    final qualification = doc['qualification'] ?? 'Speech Therapist';
+    final fee = doc['consultation_fee'];
+    final exp = doc['years_of_experience'];
+    final rating = doc['rating'];
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF3F0E9),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFEDEAE0)),
+      ),
+      child: Row(
+        children: [
+          const CircleAvatar(
+            radius: 22,
+            backgroundColor: Color(0xFF38796D),
+            child: Text('🩺', style: TextStyle(fontSize: 18)),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  docName,
+                  style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.black87),
+                ),
+                Text(
+                  exp != null ? '$qualification · $exp yrs exp' : qualification,
+                  style: GoogleFonts.poppins(fontSize: 12, color: Colors.black54),
+                ),
+              ],
+            ),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              if (fee != null)
+                Text(
+                  'PKR $fee',
+                  style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: const Color(0xFF38796D), fontSize: 13),
+                ),
+              if (rating != null && (rating as num) > 0)
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.star, color: Colors.amber, size: 14),
+                    const SizedBox(width: 2),
+                    Text(
+                      rating.toString(),
+                      style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -408,18 +697,18 @@ class _SessionsScreenState extends State<SessionsScreen> {
       width: double.infinity,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFFF3F0E9),
+        color: const Color(0xFFE6F4EA),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFEDEAE0)),
+        border: Border.all(color: const Color(0xFFB7E1CD)),
       ),
       child: Row(
         children: [
-          const Icon(Icons.info_outline, color: Color(0xFF38796D), size: 20),
+          const Icon(Icons.info_outline, color: Color(0xFF137333), size: 20),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
-              'Cancellations: $_cancellationCount / 5 used. Exceeding 5 cancellations restricts new bookings.',
-              style: GoogleFonts.poppins(fontSize: 12, color: Colors.black87),
+              'Cancellations: $_cancellationCount / 5 used. Reaching 5 cancellations locks future appointment bookings.',
+              style: GoogleFonts.poppins(fontSize: 12, color: const Color(0xFF0D652D)),
             ),
           ),
         ],
@@ -427,11 +716,11 @@ class _SessionsScreenState extends State<SessionsScreen> {
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyAppointmentsView() {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
-      margin: const EdgeInsets.only(top: 20),
+      margin: const EdgeInsets.only(top: 10),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
@@ -448,7 +737,7 @@ class _SessionsScreenState extends State<SessionsScreen> {
           ),
           const SizedBox(height: 6),
           Text(
-            'Schedule a 30-minute session with your speech therapist to track your child\'s progress.',
+            'Pick an available 30-minute slot with your speech therapist.',
             textAlign: TextAlign.center,
             style: GoogleFonts.poppins(fontSize: 13, color: Colors.black54),
           ),
@@ -457,11 +746,11 @@ class _SessionsScreenState extends State<SessionsScreen> {
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF38796D),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
             ),
-            onPressed: _navigateToBooking,
+            onPressed: _isRestricted ? null : _navigateToBooking,
             child: Text(
-              'Find Therapist & Book',
+              'Book Your First Session',
               style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.w600),
             ),
           ),
@@ -484,7 +773,7 @@ class _SessionsScreenState extends State<SessionsScreen> {
     final timeStr = '$startTimeStr - $endTimeStr';
 
     final patient = (appt['patient'] as Map?) ?? {};
-    final childName = patient['child_name']?.toString() ?? 'Child';
+    final childName = patient['child_name']?.toString() ?? _childName;
     final age = patient['age'];
 
     final doctor = (appt['doctor'] as Map?) ?? {};
@@ -500,7 +789,7 @@ class _SessionsScreenState extends State<SessionsScreen> {
         border: Border.all(color: const Color(0xFFEDEAE0)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withValues(alpha: 0.02),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -525,9 +814,9 @@ class _SessionsScreenState extends State<SessionsScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: statusColor.withOpacity(0.12),
+                  color: statusColor.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: statusColor.withOpacity(0.3)),
+                  border: Border.all(color: statusColor.withValues(alpha: 0.3)),
                 ),
                 child: Text(
                   status.toUpperCase(),
