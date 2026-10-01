@@ -33,7 +33,7 @@ class CoreBackendConfig {
 }
 
 class AuthApiConfig {
-  static const String baseUrl = 'https://speecheasy-auth-service-production.up.railway.app/api/v1';
+  static const String baseUrl = 'https://speecheasy-auth-service.vercel.app/api/v1';
 }
 
 /// Config for the separate Speechmatics transcription backend

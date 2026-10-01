@@ -69,7 +69,7 @@ class PatientAuthService {
   bool _googleReady = false;
 
   static const String _defaultLiveAuthUrl =
-      'https://speecheasy-auth-service-production.up.railway.app/api/v1';
+      'https://speecheasy-auth-service.vercel.app/api/v1';
 
   String get _baseUrl {
     final configured = AuthApiConfig.baseUrl.trim();
