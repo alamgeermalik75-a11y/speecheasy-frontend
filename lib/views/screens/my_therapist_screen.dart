@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../services/core_backend_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:untitled1/views/screens/book_session_screen.dart';
+import 'sessions_screen.dart';
 import '../../auth/auth_service.dart';
 
 class MyTherapistScreen extends StatefulWidget {
@@ -245,6 +246,26 @@ class _MyTherapistScreenState extends State<MyTherapistScreen> {
             ),
             const SizedBox(height: 24),
 
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xff38796D),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                ),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const SessionsScreen(),
+                    ),
+                  );
+                },
+                child: Text('View My Sessions', style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.w600)),
+              ),
+            ),
+            const SizedBox(height: 12),
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(

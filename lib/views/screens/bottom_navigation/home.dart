@@ -16,6 +16,7 @@ import '../../../controllers/library_controller.dart';
 import '../../../models/alphabet.dart';
 import '../my_therapist_screen.dart';
 import '../notifications_screen.dart';
+import '../sessions_screen.dart';
 import '../sounddetailscreens3.dart';
 import '../child_profile.dart';
 
@@ -341,8 +342,28 @@ class _HomeState extends State<Home> {
   //         ),
   //       ],
   //     ),
-  //   );
-  // }
+  Widget buildMySessionsCard() {
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+      color: const Color(0xFFD6F0EA).withOpacity(0.45),
+      child: ListTile(
+        leading: const CircleAvatar(
+          radius: 23,
+          backgroundColor: Color(0xFF38796D),
+          child: Text('📅', style: TextStyle(fontSize: 18)),
+        ),
+        title: Text('My Therapy Sessions', style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 15)),
+        subtitle: Text('View, schedule, and manage appointments', style: GoogleFonts.poppins(color: Colors.black54, fontSize: 12)),
+        trailing: const Icon(Icons.chevron_right_outlined, color: Color(0xFF2E6F65)),
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const SessionsScreen()),
+          );
+        },
+      ),
+    );
+  }
 
   Widget build(BuildContext context) {
     return Scaffold(
@@ -630,6 +651,8 @@ class _HomeState extends State<Home> {
                 ),
                 SizedBox(height: 10),
                 buildMyDoctorCard(),
+                SizedBox(height: 10),
+                buildMySessionsCard(),
                 SizedBox(height: 10),
                 Container(
                   padding: EdgeInsets.symmetric(horizontal: 10, vertical: 10),

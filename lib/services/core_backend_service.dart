@@ -273,6 +273,57 @@ class CoreBackendService {
     }
   }
 
+  Future<Map<String, dynamic>?> getMySessions() async {
+    try {
+      final headers = await _getHeaders();
+      final res = await http.get(
+        Uri.parse('$_baseUrl/appointments/me'),
+        headers: headers,
+      );
+      if (res.statusCode == 200) {
+        return jsonDecode(res.body) as Map<String, dynamic>;
+      }
+      if (res.statusCode == 401) {
+        final refreshed = await PatientAuthService.instance.refreshToken();
+        if (refreshed) {
+          final newHeaders = await _getHeaders();
+          final retry = await http.get(
+            Uri.parse('$_baseUrl/appointments/me'),
+            headers: newHeaders,
+          );
+          if (retry.statusCode == 200) {
+            return jsonDecode(retry.body) as Map<String, dynamic>;
+          }
+        }
+      }
+      return null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  Future<Map<String, dynamic>> cancelAppointment(String appointmentId) async {
+    try {
+      final headers = await _getHeaders();
+      final res = await http.patch(
+        Uri.parse('$_baseUrl/appointments/$appointmentId/status'),
+        headers: headers,
+        body: jsonEncode({'status': 'cancelled'}),
+      );
+      if (res.statusCode == 200) {
+        return {'success': true, 'message': 'Appointment cancelled successfully.'};
+      }
+      try {
+        final body = jsonDecode(res.body);
+        return {'success': false, 'message': body['detail'] ?? 'Could not cancel appointment.'};
+      } catch (_) {
+        return {'success': false, 'message': 'Could not cancel appointment.'};
+      }
+    } catch (e) {
+      return {'success': false, 'message': 'Network error. Please try again.'};
+    }
+  }
+
   Future<bool> updateAppointmentStatus(String appointmentId, String newStatus) async {
     try {
       final res = await http.patch(
@@ -285,6 +336,7 @@ class CoreBackendService {
       return false;
     }
   }
+
 
   // --- Ratings ---
   Future<int?> getMyRating(String doctorId) async {
