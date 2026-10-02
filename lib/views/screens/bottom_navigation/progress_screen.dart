@@ -57,26 +57,33 @@ class _ProgressScreenState extends State<ProgressScreen> {
         orderedKeys.add(key);
       }
       for (final a in attempts) {
-        final date = DateTime.parse(a['attempted_at']);
+        final rawDate = a['attempted_at'] ?? a['created_at'];
+        if (rawDate == null) continue;
+        final date = DateTime.tryParse(rawDate.toString());
+        if (date == null) continue;
         final key = '${date.day}/${date.month}';
         if (grouped.containsKey(key)) {
-          grouped[key]!.add(a['score'] as int);
+          final score = (a['score'] as num?)?.toInt() ?? 0;
+          grouped[key]!.add(score);
         }
       }
     } else {
       for (int i = 3; i >= 0; i--) {
-        final weekStart = now.subtract(Duration(days: i * 7));
         final key = 'Wk ${4 - i}';
         grouped[key] = [];
         orderedKeys.add(key);
       }
       for (final a in attempts) {
-        final date = DateTime.parse(a['attempted_at']);
+        final rawDate = a['attempted_at'] ?? a['created_at'];
+        if (rawDate == null) continue;
+        final date = DateTime.tryParse(rawDate.toString());
+        if (date == null) continue;
         final daysAgo = now.difference(date).inDays;
         final weekIndex = (daysAgo / 7).floor();
         if (weekIndex >= 0 && weekIndex < 4) {
           final key = 'Wk ${4 - weekIndex}';
-          grouped[key]?.add(a['score'] as int);
+          final score = (a['score'] as num?)?.toInt() ?? 0;
+          grouped[key]?.add(score);
         }
       }
     }
@@ -115,7 +122,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
       crossAxisAlignment: CrossAxisAlignment.end,
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: data.map((d) {
-        final avg = d['avg'] as int;
+        final avg = (d['avg'] as num?)?.toInt() ?? 0;
         final barHeight = (avg / 100) * 200;
         return Column(
           mainAxisAlignment: MainAxisAlignment.end,
@@ -181,7 +188,10 @@ class _ProgressScreenState extends State<ProgressScreen> {
     for (int i = 0; i < 7; i++) {
       final day = now.subtract(Duration(days: i));
       final hasAttempt = attempts.any((a) {
-        final date = DateTime.parse(a['attempted_at']);
+        final rawDate = a['attempted_at'] ?? a['created_at'];
+        if (rawDate == null) return false;
+        final date = DateTime.tryParse(rawDate.toString());
+        if (date == null) return false;
         return date.year == day.year && date.month == day.month && date.day == day.day;
       });
       if (!hasAttempt) {
@@ -190,7 +200,10 @@ class _ProgressScreenState extends State<ProgressScreen> {
       }
     }
 
-    final firstMastered = attempts.any((a) => (a['score'] as int) >= 70);
+    final firstMastered = attempts.any((a) {
+      final score = (a['score'] as num?)?.toInt() ?? 0;
+      return score >= 70;
+    });
 
     return {
       '7-Day Streak': sevenDayStreak,
@@ -220,7 +233,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
                     color: Colors.black,
                   ),
                   decoration: BoxDecoration(
-                    color: Color(0xFFBAB49B).withOpacity(0.2),
+                    color: const Color(0xFFBAB49B).withValues(alpha: 0.2),
                     shape: BoxShape.circle,
                   ),
                 ),

@@ -58,14 +58,19 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     }
   }
 
-  String formatTime(String timestamp) {
-    final date = DateTime.parse(timestamp);
-    final diff = DateTime.now().difference(date);
-    if (diff.inMinutes < 1) return 'Just now';
-    if (diff.inHours < 1) return '${diff.inMinutes} min ago';
-    if (diff.inHours < 24) return '${diff.inHours} hours ago';
-    if (diff.inDays == 1) return 'Yesterday';
-    return '${diff.inDays} days ago';
+  String formatTime(String? timestamp) {
+    if (timestamp == null || timestamp.isEmpty) return '';
+    try {
+      final date = DateTime.parse(timestamp);
+      final diff = DateTime.now().difference(date);
+      if (diff.inMinutes < 1) return 'Just now';
+      if (diff.inHours < 1) return '${diff.inMinutes} min ago';
+      if (diff.inHours < 24) return '${diff.inHours} hours ago';
+      if (diff.inDays == 1) return 'Yesterday';
+      return '${diff.inDays} days ago';
+    } catch (_) {
+      return '';
+    }
   }
 
   @override
@@ -87,7 +92,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 child: Container(
                   child: Icon(Icons.keyboard_backspace_sharp, color: Colors.black,),
                   decoration: BoxDecoration(
-                      color: Color(0xFFBAB49B).withOpacity(0.2),
+                      color: const Color(0xFFBAB49B).withValues(alpha: 0.2),
                       shape: BoxShape.circle
                   ),
                 ),
