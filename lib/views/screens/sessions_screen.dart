@@ -184,7 +184,9 @@ class _SessionsScreenState extends State<SessionsScreen> {
             ),
             const SizedBox(height: 10),
             Text(
-              'You have used $_cancellationCount of 5 permitted cancellations. Reaching 5 cancellations will lock new appointment bookings.',
+              _cancellationCount > 0
+                  ? 'Continuous cancellations: $_cancellationCount of 5. Reaching 5 continuous cancellations will lock your profile.'
+                  : 'Note: Reaching 5 continuous appointment cancellations will lock your profile from booking new sessions.',
               style: GoogleFonts.poppins(fontSize: 12, color: const Color(0xFFC0432A)),
             ),
           ],
@@ -246,7 +248,7 @@ class _SessionsScreenState extends State<SessionsScreen> {
         SnackBar(
           backgroundColor: Colors.red.shade800,
           content: Text(
-            'Booking is restricted due to 5 cancellations. Please contact support.',
+            'Your profile is locked due to 5 continuous cancellations. Please contact support.',
             style: GoogleFonts.poppins(color: Colors.white),
           ),
         ),
@@ -421,9 +423,11 @@ class _SessionsScreenState extends State<SessionsScreen> {
             _buildLinkedDoctorCard(),
             const SizedBox(height: 14),
 
-            // Cancellation Quota Banner
-            _buildQuotaBanner(),
-            const SizedBox(height: 16),
+            // Profile Locked Banner (only shown if profile is locked due to 5 continuous cancellations)
+            if (_isRestricted) ...[
+              _buildQuotaBanner(),
+              const SizedBox(height: 16),
+            ],
 
             // Sessions Header
             Row(
@@ -955,61 +959,41 @@ class _SessionsScreenState extends State<SessionsScreen> {
   }
 
   Widget _buildQuotaBanner() {
-    if (_isRestricted) {
-      return Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: const Color(0xFFFEE2E2),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: const Color(0xFFFCA5A5)),
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Icon(Icons.block, color: Color(0xFFDC2626), size: 24),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Booking Restricted',
-                    style: GoogleFonts.poppins(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                      color: const Color(0xFF991B1B),
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'You have reached the maximum limit of 5 appointment cancellations. New bookings are currently locked.',
-                    style: GoogleFonts.poppins(fontSize: 12, color: const Color(0xFF7F1D1D)),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      );
+    if (!_isRestricted) {
+      return const SizedBox.shrink();
     }
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFFE6F4EA),
+        color: const Color(0xFFFEE2E2),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFB7E1CD)),
+        border: Border.all(color: const Color(0xFFFCA5A5)),
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.info_outline, color: Color(0xFF137333), size: 20),
-          const SizedBox(width: 10),
+          const Icon(Icons.lock_outline, color: Color(0xFFDC2626), size: 24),
+          const SizedBox(width: 12),
           Expanded(
-            child: Text(
-              'Cancellations: $_cancellationCount / 5 used. Reaching 5 cancellations locks future appointment bookings.',
-              style: GoogleFonts.poppins(fontSize: 12, color: const Color(0xFF0D652D)),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Profile Locked',
+                  style: GoogleFonts.poppins(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                    color: const Color(0xFF991B1B),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Your profile is locked due to 5 continuous appointment cancellations. Booking new appointments is disabled. Please contact support.',
+                  style: GoogleFonts.poppins(fontSize: 12, color: const Color(0xFF7F1D1D)),
+                ),
+              ],
             ),
           ),
         ],
