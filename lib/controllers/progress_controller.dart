@@ -22,9 +22,9 @@ class ProgressController extends ChangeNotifier {
 
   double alphabetProgress = 0.0;
   double overallProgress = 0.0;
-  int dailyProgress = 0;
-  int weeklyProgress = 0;
-  int monthlyProgress = 0;
+  double dailyProgress = 0.0;
+  double weeklyProgress = 0.0;
+  double monthlyProgress = 0.0;
 
   String? _currentAlphabet;
   String? get currentAlphabet => _currentAlphabet;
@@ -46,9 +46,9 @@ class ProgressController extends ChangeNotifier {
       if (overview != null) {
         alphabetProgress = (overview['alphabet_progress'] as num?)?.toDouble() ?? 0.0;
         overallProgress = (overview['overall_progress'] as num?)?.toDouble() ?? 0.0;
-        dailyProgress = (overview['daily_progress'] as num?)?.toInt() ?? 0;
-        weeklyProgress = (overview['weekly_progress'] as num?)?.toInt() ?? 0;
-        monthlyProgress = (overview['monthly_progress'] as num?)?.toInt() ?? 0;
+        dailyProgress = (overview['daily_progress'] as num?)?.toDouble() ?? 0.0;
+        weeklyProgress = (overview['weekly_progress'] as num?)?.toDouble() ?? 0.0;
+        monthlyProgress = (overview['monthly_progress'] as num?)?.toDouble() ?? 0.0;
 
         final cats = overview['categories'] as Map<String, dynamic>? ?? {};
         bool prevComp = true;
