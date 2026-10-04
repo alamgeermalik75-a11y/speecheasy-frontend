@@ -415,6 +415,22 @@ class CoreBackendService {
     }
   }
 
+  Future<Map<String, dynamic>?> getProgressOverview({String? alphabetName}) async {
+    try {
+      var url = '$_baseUrl/attempts/overview';
+      if (alphabetName != null) {
+        url += '?alphabet_name=$alphabetName';
+      }
+      final res = await http.get(Uri.parse(url), headers: await _getHeaders());
+      if (res.statusCode == 200) {
+        return jsonDecode(res.body) as Map<String, dynamic>;
+      }
+      return null;
+    } catch (_) {
+      return null;
+    }
+  }
+
   // --- Notifications ---
   Future<List<Map<String, dynamic>>> getNotifications() async {
     try {

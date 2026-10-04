@@ -62,9 +62,7 @@ class _SoundDetailScreenState extends State<SoundDetailScreen> {
       body: SafeArea(
         child: Consumer<ProgressController>(
           builder: (context, progress, _) {
-            final overall = progress.completion.values.isEmpty
-                ? 0
-                : (progress.completion.values.reduce((a, b) => a + b) / progress.completion.length).round();
+            final overall = progress.alphabetProgress.round();
         
             return Padding(
               padding: r.pagePadding,
@@ -114,15 +112,10 @@ class _SoundDetailScreenState extends State<SoundDetailScreen> {
                   Expanded(
                     child: ListView(
                       children: PracticeLevel.values.map((level) {
-                        final levelIndex = PracticeLevel.values.indexOf(level);
-                        final isFirst = levelIndex == 0;
-                        final previousLevel = isFirst ? null : PracticeLevel.values[levelIndex - 1];
-                        final previousComplete = isFirst || (progress.completion[previousLevel] ?? 0) >= 100;
-
                         return LevelTile(
                           level: level,
                           completionPercent: progress.completion[level] ?? 0,
-                          locked: !previousComplete,
+                          locked: !progress.isLevelUnlocked(level),
                           onTap: () => _openLevel(context, level),
                         );
                       }).toList(),

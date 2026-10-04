@@ -219,10 +219,10 @@ class ApiService {
     final data = await _getAlphabetDetail(alphabetName);
     final list = data['sentences'];
     if (list is List && list.isNotEmpty) {
-      return _stringListToItems(list, letter);
+      return _stringListToItems(list, letter, idPrefix: '${alphabetName}_sentence');
     }
 
-    return _tryFallbackEndpoint(ApiConfig.alphabetSentences(alphabetName), letter, ['sentences', 'items', 'list']);
+    return _tryFallbackEndpoint(ApiConfig.alphabetSentences(alphabetName), letter, ['sentences', 'items', 'list'], idPrefix: '${alphabetName}_sentence');
   }
 
   Future<List<WordItem>> getPoems(String alphabetName, String letter) async {
@@ -296,14 +296,20 @@ class ApiService {
     return [data.toString()];
   }
 
-  List<WordItem> _stringListToItems(List raw, String letter) {
-    return raw
-        .where((e) => e != null && e.toString().trim().isNotEmpty)
-        .map((e) => WordItem(id: UniqueKeyLocal.next(), text: e.toString(), targetLetter: letter))
-        .toList();
+  List<WordItem> _stringListToItems(List raw, String letter, {String idPrefix = 'item'}) {
+    final valid = raw.where((e) => e != null && e.toString().trim().isNotEmpty).toList();
+    final items = <WordItem>[];
+    for (int i = 0; i < valid.length; i++) {
+      items.add(WordItem(
+        id: '${idPrefix}_$i',
+        text: valid[i].toString(),
+        targetLetter: letter,
+      ));
+    }
+    return items;
   }
 
-  Future<List<WordItem>> _tryFallbackEndpoint(String url, String letter, List<String> candidateKeys) async {
+  Future<List<WordItem>> _tryFallbackEndpoint(String url, String letter, List<String> candidateKeys, {String idPrefix = 'item'}) async {
     try {
       final res = await _get(Uri.parse(url));
       if (res.statusCode != 200) return [];
@@ -312,9 +318,9 @@ class ApiService {
 
       for (final key in candidateKeys) {
         final v = data[key];
-        if (v is List && v.isNotEmpty) return _stringListToItems(v, letter);
+        if (v is List && v.isNotEmpty) return _stringListToItems(v, letter, idPrefix: idPrefix);
         if (v is String && v.trim().isNotEmpty) {
-          return [WordItem(id: UniqueKeyLocal.next(), text: v, targetLetter: letter)];
+          return [WordItem(id: '${idPrefix}_0', text: v, targetLetter: letter)];
         }
       }
       return [];

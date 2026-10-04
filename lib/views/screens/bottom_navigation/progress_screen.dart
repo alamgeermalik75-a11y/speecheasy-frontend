@@ -17,6 +17,13 @@ class _ProgressScreenState extends State<ProgressScreen> {
   bool isWeekly = true;
   bool isLoading = true;
   List<Map<String, dynamic>> attempts = [];
+  Map<String, dynamic>? overview;
+  double overallProgress = 0.0;
+  String currentAlphabet = '';
+  double currentAlphabetProgress = 0.0;
+  int dailyProgress = 0;
+  int weeklyProgress = 0;
+  int monthlyProgress = 0;
 
   String get currentUid => AuthService.instance.currentUid ?? (FirebaseAuth.instance.currentUser?.uid ?? '');
 
@@ -30,10 +37,20 @@ class _ProgressScreenState extends State<ProgressScreen> {
     setState(() => isLoading = true);
     try {
       final data = await CoreBackendService().getAttemptHistory();
+      final ov = await CoreBackendService().getProgressOverview();
 
       if (mounted) {
         setState(() {
           attempts = List<Map<String, dynamic>>.from(data);
+          overview = ov;
+          if (ov != null) {
+            overallProgress = (ov['overall_progress'] as num?)?.toDouble() ?? 0.0;
+            currentAlphabet = ov['alphabet_name']?.toString() ?? '';
+            currentAlphabetProgress = (ov['alphabet_progress'] as num?)?.toDouble() ?? 0.0;
+            dailyProgress = (ov['daily_progress'] as num?)?.toInt() ?? 0;
+            weeklyProgress = (ov['weekly_progress'] as num?)?.toInt() ?? 0;
+            monthlyProgress = (ov['monthly_progress'] as num?)?.toInt() ?? 0;
+          }
           isLoading = false;
         });
       }
@@ -42,6 +59,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
       if (mounted) setState(() => isLoading = false);
     }
   }
+
   List<Map<String, dynamic>> getChartData() {
     if (attempts.isEmpty) return [];
 
@@ -144,6 +162,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
       }).toList(),
     );
   }
+
   Widget buildAchievements() {
     final unlocked = getAchievements();
     final items = [
@@ -182,6 +201,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
       }).toList(),
     );
   }
+
   Map<String, bool> getAchievements() {
     final now = DateTime.now();
     bool sevenDayStreak = true;
@@ -210,12 +230,13 @@ class _ProgressScreenState extends State<ProgressScreen> {
       'First Mastered': firstMastered,
     };
   }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFFBF9F5),
       appBar: PreferredSize(
-        preferredSize:  Size.fromHeight(50.0),
+        preferredSize: const Size.fromHeight(50.0),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 13),
           child: AppBar(
@@ -225,16 +246,16 @@ class _ProgressScreenState extends State<ProgressScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 5),
               child: InkWell(
                 onTap: () {
-                  Navigator.push(context, MaterialPageRoute(builder: (context)=> BottomNavigation()));
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => BottomNavigation()));
                 },
                 child: Container(
-                  child:  Icon(
-                    Icons.keyboard_backspace_sharp,
-                    color: Colors.black,
-                  ),
                   decoration: BoxDecoration(
                     color: const Color(0xFFBAB49B).withValues(alpha: 0.2),
                     shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.keyboard_backspace_sharp,
+                    color: Colors.black,
                   ),
                 ),
               ),
@@ -246,67 +267,122 @@ class _ProgressScreenState extends State<ProgressScreen> {
       ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
-          : Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              height: 50,
-              decoration: BoxDecoration(
-                color: const Color(0xFFE8E4DA),
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Row(
+          : SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  buildToggleButton('Weekly', true),
-                  buildToggleButton('Monthly', false),
+                  // Overall Progress & Focus Alphabet Card
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE8E4DA),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Overall Progress',
+                              style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.black87),
+                            ),
+                            Text(
+                              '${overallProgress.toStringAsFixed(1)}%',
+                              style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 16, color: const Color(0xff38796D)),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: LinearProgressIndicator(
+                            value: (overallProgress / 100).clamp(0.0, 1.0),
+                            backgroundColor: Colors.white60,
+                            color: const Color(0xff38796D),
+                            minHeight: 10,
+                          ),
+                        ),
+                        if (currentAlphabet.isNotEmpty) ...[
+                          const SizedBox(height: 12),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'Current Sound: $currentAlphabet',
+                                style: GoogleFonts.poppins(fontSize: 13, color: Colors.black87, fontWeight: FontWeight.w500),
+                              ),
+                              Text(
+                                '${currentAlphabetProgress.toStringAsFixed(0)}%',
+                                style: GoogleFonts.poppins(fontSize: 13, color: const Color(0xff38796D), fontWeight: FontWeight.w600),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  // Toggle Button Weekly / Monthly
+                  Container(
+                    height: 50,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE8E4DA),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Row(
+                      children: [
+                        buildToggleButton('Weekly', true),
+                        buildToggleButton('Monthly', false),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Text(
+                    isWeekly ? 'Last 7 Days' : 'Last 4 Weeks',
+                    style: GoogleFonts.poppins(
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black54,
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE8E4DA),
+                      borderRadius: BorderRadius.circular(18),
+                    ),
+                    child: SizedBox(
+                      height: 260,
+                      child: attempts.isEmpty
+                          ? Center(
+                              child: Text(
+                                'No practice sessions yet.\nStart practicing to see progress!',
+                                textAlign: TextAlign.center,
+                                style: GoogleFonts.poppins(color: Colors.black45),
+                              ),
+                            )
+                          : buildChart(),
+                    ),
+                  ),
+                  const SizedBox(height: 30),
+                  Text(
+                    'ACHIEVEMENTS',
+                    style: GoogleFonts.poppins(
+                      fontSize: 13,
+                      color: Colors.black54,
+                      letterSpacing: 1,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  buildAchievements(),
                 ],
               ),
             ),
-            const SizedBox(height: 30),
-            Text(
-              isWeekly ? 'Last 7 Days' : 'Last 4 Weeks',
-              style: GoogleFonts.poppins(
-                fontWeight: FontWeight.w600,
-                color: Colors.black54,
-              ),
-            ),
-            const SizedBox(height: 20),
-            Container(
-              padding: EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-              decoration: BoxDecoration(
-                color: Color(0xFFE8E4DA),
-                borderRadius: BorderRadius.circular(18)
-              ),
-              child: SizedBox(
-                height: 260,
-                child: attempts.isEmpty
-                    ? Center(
-                  child: Text(
-                    'No practice sessions yet.\nStart practicing to see progress!',
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.poppins(color: Colors.black45),
-                  ),
-                )
-                    : buildChart(),
-              ),
-            ),
-             SizedBox(height: 30),
-            Text(
-              'ACHIEVEMENTS',
-              style: GoogleFonts.poppins(
-                fontSize: 13,
-                color: Colors.black54,
-                letterSpacing: 1,
-                fontWeight: FontWeight.bold
-              ),
-            ),
-             SizedBox(height: 10),
-            buildAchievements(),
-          ],
-        ),
-      ),
     );
   }
 }
