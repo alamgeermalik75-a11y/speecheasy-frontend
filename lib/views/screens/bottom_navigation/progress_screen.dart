@@ -134,18 +134,19 @@ class _ProgressScreenState extends State<ProgressScreen> {
       final v = (e['val'] as num?)?.toDouble() ?? 0.0;
       return v > prev ? v : prev;
     });
+    final scaleCeiling = maxVal > 5.0 ? maxVal : 5.0;
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.end,
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: data.map((d) {
         final val = (d['val'] as num?)?.toDouble() ?? 0.0;
-        final barHeight = maxVal > 0 ? ((val / maxVal) * 140.0) : 4.0;
-        final displayHeight = barHeight < 4.0 ? 4.0 : barHeight;
+        final barHeight = val > 0 ? ((val / scaleCeiling) * 140.0) : 4.0;
+        final displayHeight = val > 0 ? (barHeight < 8.0 ? 8.0 : (barHeight > 140.0 ? 140.0 : barHeight)) : 4.0;
 
         String textLabel = '0%';
         if (val > 0) {
-          textLabel = val >= 1.0 ? '${val.toStringAsFixed(1)}%' : '${val.toStringAsFixed(2)}%';
+          textLabel = val >= 1.0 ? '+${val.toStringAsFixed(1)}%' : '+${val.toStringAsFixed(2)}%';
         }
 
         return Column(

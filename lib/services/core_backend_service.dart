@@ -417,9 +417,10 @@ class CoreBackendService {
 
   Future<Map<String, dynamic>?> getProgressOverview({String? alphabetName}) async {
     try {
-      var url = '$_baseUrl/attempts/overview';
-      if (alphabetName != null) {
-        url += '?alphabet_name=$alphabetName';
+      final tzOffset = DateTime.now().timeZoneOffset.inMinutes;
+      var url = '$_baseUrl/attempts/overview?tz_offset_minutes=$tzOffset';
+      if (alphabetName != null && alphabetName.trim().isNotEmpty) {
+        url += '&alphabet_name=${alphabetName.trim()}';
       }
       final res = await http.get(Uri.parse(url), headers: await _getHeaders());
       if (res.statusCode == 200) {
