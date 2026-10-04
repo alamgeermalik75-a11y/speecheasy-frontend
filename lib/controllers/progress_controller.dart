@@ -87,9 +87,12 @@ class ProgressController extends ChangeNotifier {
     required String itemId,
     required PracticeLevel level,
     required int score,
+    String? alphabetName,
   }) async {
-    if (_currentAlphabet == null) return;
-    final alpha = _currentAlphabet!;
+    final alpha = (alphabetName != null && alphabetName.trim().isNotEmpty)
+        ? alphabetName.trim()
+        : (_currentAlphabet ?? (itemId.contains('_') ? itemId.split('_').first : 'bay'));
+    _currentAlphabet = alpha;
 
     // 1. Send to backend immediately
     try {

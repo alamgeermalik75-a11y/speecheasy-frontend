@@ -149,6 +149,7 @@ class _WordPracticeScreenState extends State<WordPracticeScreen> {
                                             itemId: itemId,
                                             level: widget.level,
                                             score: score,
+                                            alphabetName: widget.alphabet.name,
                                           );
                                     },
                                     onInfo: _showMessage,

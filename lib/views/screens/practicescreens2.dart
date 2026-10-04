@@ -181,6 +181,7 @@ class _PracticeScreenState extends State<PracticeScreen> {
                                             itemId: itemId,
                                             level: widget.level,
                                             score: score,
+                                            alphabetName: widget.alphabet.name,
                                           );
                                     },
                                     onInfo: _showMessage,

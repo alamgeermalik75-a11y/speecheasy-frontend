@@ -220,6 +220,7 @@ class _FillBlankScreenState extends State<FillBlankScreen> {
                                                       itemId: itemId,
                                                       level: PracticeLevel.fillBlanks,
                                                       score: score,
+                                                      alphabetName: widget.alphabet.name,
                                                     );
                                               },
                                               onInfo: _showMessage,
