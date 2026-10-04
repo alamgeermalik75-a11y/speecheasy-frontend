@@ -390,10 +390,14 @@ class CoreBackendService {
         }),
       );
       if (res.statusCode == 201) {
-        return jsonDecode(res.body) as Map<String, dynamic>;
+        final decoded = jsonDecode(res.body) as Map<String, dynamic>;
+        print('[ATTEMPT] Successfully recorded: $itemId -> score: $score');
+        return decoded;
       }
+      print('[ATTEMPT ERROR] Status ${res.statusCode}: ${res.body}');
       return null;
-    } catch (_) {
+    } catch (e) {
+      print('[ATTEMPT EXCEPTION] $e');
       return null;
     }
   }

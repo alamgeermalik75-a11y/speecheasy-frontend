@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import '../../../services/core_backend_service.dart';
+import '../../../services/patient_auth_service.dart';
+import '../../../services/storage_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:untitled1/views/screens/bottom_navigation/bottom_navigation.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -897,7 +900,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
         ),
         content: Text(
-          'This will permanently delete your child\'s profile and all practice data. This cannot be undone.',
+          'This will permanently delete your account, child profile, practice history, and all linked data. This action cannot be undone.',
           style: GoogleFonts.poppins(),
         ),
         actions: [
@@ -909,7 +912,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
             onPressed: () => Navigator.pop(context, true),
             child: Text(
               'Delete',
-              style: GoogleFonts.poppins(color: const Color(0xffC0432A)),
+              style: GoogleFonts.poppins(
+                color: const Color(0xffC0432A),
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
         ],
@@ -918,12 +924,80 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     if (confirm != true) return;
 
+    if (!mounted) return;
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(
+        child: CircularProgressIndicator(color: Color(0xffC0432A)),
+      ),
+    );
+
     try {
-      await CoreBackendService().deleteMyProfile();
-      await FirebaseAuth.instance.currentUser?.delete();
+      // 1. Delete all user records from backend (Supabase attempts, progress_events, focus_sound, notifications, patient_requests, patients, appointments, ratings, profiles, users)
+      try {
+        await CoreBackendService().deleteMyProfile().timeout(
+          const Duration(seconds: 10),
+          onTimeout: () => false,
+        );
+      } catch (e) {
+        debugPrint('Backend account deletion note: $e');
+      }
+
+      // 2. Clear local storage attempts and totals
+      try {
+        await StorageService().clearAll();
+      } catch (_) {}
+
+      // 3. Clear local SharedPreferences cache
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.clear();
+      } catch (_) {}
+
+      // 4. Revoke and logout from PatientAuthService
+      try {
+        await PatientAuthService.instance.logout().timeout(
+          const Duration(seconds: 4),
+          onTimeout: () => null,
+        );
+      } catch (_) {}
+
+      // 5. Sign out from AuthService
+      try {
+        await AuthService.instance.signOut().timeout(
+          const Duration(seconds: 2),
+          onTimeout: () => null,
+        );
+      } catch (_) {}
+
+      // 6. Delete Firebase Auth user if present
+      try {
+        final fbUser = FirebaseAuth.instance.currentUser;
+        if (fbUser != null) {
+          await fbUser.delete().timeout(
+            const Duration(seconds: 5),
+            onTimeout: () => null,
+          );
+        }
+      } catch (e) {
+        debugPrint('FirebaseAuth delete note: $e');
+        try {
+          await FirebaseAuth.instance.signOut();
+        } catch (_) {}
+      }
+
+      // 7. Sign out Google Sign In
+      try {
+        await GoogleSignIn.instance.signOut().timeout(
+          const Duration(seconds: 2),
+          onTimeout: () => null,
+        );
+      } catch (_) {}
 
       if (mounted) {
-        Navigator.of(context).pushAndRemoveUntil(
+        Navigator.of(context, rootNavigator: true).pop(); // dismiss loading dialog
+        Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
           MaterialPageRoute(builder: (context) => const Signin1()),
           (route) => false,
         );
@@ -931,10 +1005,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
     } catch (e) {
       debugPrint('Error deleting account: $e');
       if (mounted) {
+        Navigator.of(context, rootNavigator: true).pop(); // dismiss loading dialog
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text(
-              'Could not delete account. You may need to log in again first.',
+              'Could not delete account. Please try again.',
             ),
           ),
         );

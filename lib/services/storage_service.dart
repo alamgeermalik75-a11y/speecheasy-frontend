@@ -80,4 +80,15 @@ class StorageService {
     }
     return count == 0 ? 0 : (total / count).round();
   }
+
+  Future<void> clearAll() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_historyKey);
+    final keys = prefs.getKeys();
+    for (final key in keys) {
+      if (key.startsWith(_totalPrefix)) {
+        await prefs.remove(key);
+      }
+    }
+  }
 }
