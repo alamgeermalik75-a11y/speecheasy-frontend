@@ -62,7 +62,10 @@ class _SoundDetailScreenState extends State<SoundDetailScreen> {
       body: SafeArea(
         child: Consumer<ProgressController>(
           builder: (context, progress, _) {
-            final overall = progress.alphabetProgress.round();
+            final progVal = progress.alphabetProgress;
+            final overall = (progVal == progVal.roundToDouble())
+                ? '${progVal.toInt()}'
+                : progVal.toStringAsFixed(1);
         
             return Padding(
               padding: r.pagePadding,
