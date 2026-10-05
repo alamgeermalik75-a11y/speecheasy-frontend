@@ -75,7 +75,7 @@ class ProgressController extends ChangeNotifier {
     for (final level in PracticeLevel.values) {
       final score = await _storage.getLevelCompletion(alphabetName, level);
       completion[level] = score;
-      completed[level] = score >= 100;
+      completed[level] = score >= 70;
       unlocked[level] = prevCompFallback;
       prevCompFallback = completed[level]!;
     }
