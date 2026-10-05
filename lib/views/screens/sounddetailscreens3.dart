@@ -65,7 +65,7 @@ class _SoundDetailScreenState extends State<SoundDetailScreen> {
             final progVal = progress.alphabetProgress;
             final overall = (progVal == progVal.roundToDouble())
                 ? '${progVal.toInt()}'
-                : progVal.toStringAsFixed(1);
+                : progVal.toStringAsFixed(2);
         
             return Padding(
               padding: r.pagePadding,

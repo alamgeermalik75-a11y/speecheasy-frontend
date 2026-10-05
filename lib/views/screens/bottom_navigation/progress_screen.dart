@@ -146,7 +146,9 @@ class _ProgressScreenState extends State<ProgressScreen> {
 
         String textLabel = '0%';
         if (val > 0) {
-          textLabel = val >= 1.0 ? '+${val.toStringAsFixed(1)}%' : '+${val.toStringAsFixed(2)}%';
+          textLabel = (val == val.roundToDouble())
+              ? '+${val.toInt()}%'
+              : '+${val.toStringAsFixed(2)}%';
         }
 
         return Column(
@@ -298,7 +300,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
                               style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.black87),
                             ),
                             Text(
-                              '${overallProgress.toStringAsFixed(1)}%',
+                              '${overallProgress == overallProgress.roundToDouble() ? overallProgress.toInt() : overallProgress.toStringAsFixed(2)}%',
                               style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 16, color: const Color(0xff38796D)),
                             ),
                           ],
@@ -323,7 +325,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
                                 style: GoogleFonts.poppins(fontSize: 13, color: Colors.black87, fontWeight: FontWeight.w500),
                               ),
                               Text(
-                                '${currentAlphabetProgress.toStringAsFixed(0)}%',
+                                '${currentAlphabetProgress == currentAlphabetProgress.roundToDouble() ? currentAlphabetProgress.toInt() : currentAlphabetProgress.toStringAsFixed(2)}%',
                                 style: GoogleFonts.poppins(fontSize: 13, color: const Color(0xff38796D), fontWeight: FontWeight.w600),
                               ),
                             ],
